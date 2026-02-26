@@ -23,12 +23,22 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $dni = $this->faker->unique()->randomNumber(8, true) . $this->faker->randomLetter();
+        $dniNormalizado = strtoupper($dni);
+
         return [
-            'name' => fake()->name(),
+            'name' => fake()->firstName(),
+            'surname' => fake()->lastName() . ' ' . fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
+            'dni' => $dni,
+            'dni_normalizado' => $dniNormalizado,
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'password' => static::$password ??= \Illuminate\Support\Facades\Hash::make('password123'),
+            'phone' => fake()->mobileNumber(),
+            'position' => fake()->jobTitle(),
+            'status' => fake()->randomElement(['active', 'active', 'active', 'inactive']), 
+            'hired_at' => fake()->dateTimeBetween('-5 years', 'now'),
+            'remember_token' => \Illuminate\Support\Str::random(10),
         ];
     }
 
