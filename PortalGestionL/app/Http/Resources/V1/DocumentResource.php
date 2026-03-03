@@ -20,7 +20,7 @@ class DocumentResource extends JsonResource
             'tamano_bytes' => $this->size,
             'visibilidad' => $this->visibility,
             'fecha_subida' => $this->created_at->format('Y-m-d H:i:s'),
-            // En lugar de enviar la ruta física del servidor, enviamos una URL de nuestro endpoint de descarga
+            //En lugar de enviar la ruta física del servidor, enviamos una URL de nuestro endpoint de descarga
             //El endpoint es algo que definiremos en nuestro DocumentController, por ejemplo: GET /api/v1/documents/{id}/download
             'url_descarga' => url("/api/v1/documents/{$this->id}/download"), 
         ];

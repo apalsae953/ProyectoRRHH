@@ -27,7 +27,7 @@ class Document extends Model
     ];
 
     protected $casts = [
-        'signed_url_expires_at' => 'datetime', // Laravel lo convertirá a un objeto Carbon automáticamente
+        'signed_url_expires_at' => 'datetime', //Laravel lo convertirá a un objeto Carbon automáticamente
     ];
 
     public function getActivitylogOptions(): LogOptions
