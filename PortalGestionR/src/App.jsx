@@ -1,23 +1,27 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Employees from './pages/Employees';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './layouts/AdminLayout';
+import Vacations from './pages/Vacations';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rutas Públicas */}
         <Route path="/login" element={<Login />} />
 
-        {/* Rutas Privadas (Protegidas) */}
+        {/* Rutas Protegidas */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Dashboard />} />
-          {/* Aquí añadiremos más adelante /empleados, /vacaciones, etc. */}
+          <Route element={<AdminLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/empleados" element={<Employees />} />
+            <Route path="/vacaciones" element={<Vacations />} />    
+          </Route>
         </Route>
         
-        {/* Ruta para capturar URLs que no existen (Error 404) */}
-        <Route path="*" element={<div style={{ padding: '50px', textAlign: 'center' }}><h2>Error 404: Página no encontrada</h2></div>} />
+        <Route path="*" element={<div className="p-10 text-center"><h2>Error 404: Página no encontrada</h2></div>} />
       </Routes>
     </BrowserRouter>
   );

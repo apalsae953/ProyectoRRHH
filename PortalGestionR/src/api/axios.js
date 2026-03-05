@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    // La URL base de tu API de Laravel
+    // URL de la API de Laravale(Backend)
     baseURL: 'http://localhost:8000', 
     
     // Le dice a Axios que envíe las cookies de sesión en cada petición.

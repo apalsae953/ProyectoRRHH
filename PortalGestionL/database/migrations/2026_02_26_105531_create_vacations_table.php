@@ -18,13 +18,10 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->integer('days');
-
-            //Estado de la solicitud
             $table->enum('status', ['draft', 'pending', 'approved', 'rejected', 'canceled'])->default('draft');
 
             //Director que aprueba o rechaza la solicitud
             $table->foreignId('approver_id')->nullable()->constrained('users')->nullOnDelete();
-
             $table->text('note')->nullable(); //Nota del empleado al solicitar las vacaciones
             $table->timestamps();
 

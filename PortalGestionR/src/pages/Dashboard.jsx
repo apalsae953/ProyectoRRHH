@@ -1,120 +1,92 @@
 import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
-    const { user, logout } = useAuth();
-    
-    // Comprobamos si el usuario es administrador para mostrarle cosas especiales
-    const isAdmin = user?.roles?.some(r => r.name === 'admin' || r.name === 'hr_director');
+    const { user } = useAuth(); // Quitamos el logout, que ya se usa en el Layout
+
+    const isAdmin = user && user.roles && user.roles.some(r => r.name === 'admin' || r.name === 'hr_director');
 
     return (
-        <div className="flex h-screen bg-gray-50 font-sans">
-            
-            {/* 1. MENÚ LATERAL (Sidebar Oscuro) */}
-            <aside className="w-64 bg-slate-900 text-white flex-col shadow-2xl z-10 hidden md:flex">
-                <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-corporate rounded-xl flex items-center justify-center font-bold text-xl shadow-lg">
-                        G
+        <div className="animate-fade-in pb-10">
+
+            {/* Banner de Bienvenida Premium */}
+            <div className="relative bg-[#0F172A] rounded-3xl p-8 md:p-10 shadow-2xl mb-8 overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-corporate to-purple-600 opacity-20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 transition-transform duration-700 group-hover:scale-110"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500 opacity-10 blur-2xl rounded-full -translate-x-1/2 translate-y-1/2"></div>
+
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div>
+                        <span className="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-semibold tracking-wider mb-4 uppercase">Visión General</span>
+                        <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Bienvenido, {user.name}</h2>
+                        <p className="text-slate-400 text-lg max-w-xl font-medium">Aquí tienes el resumen de tu perfil y acceso a las herramientas de gestión de Globomatik.</p>
                     </div>
-                    <span className="text-2xl font-extrabold tracking-tight">Globomatik</span>
+                    <div className="hidden lg:block">
+                        <div className="w-16 h-16 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl flex items-center justify-center text-corporate-light">
+                            <i className="fa-solid fa-chart-line text-2xl"></i>
+                        </div>
+                    </div>
                 </div>
-                
-                <nav className="flex-1 p-4 space-y-2 mt-4">
-                    <a href="#" className="flex items-center gap-3 px-4 py-3 bg-corporate/20 text-corporate-light rounded-xl font-bold transition-all border border-corporate/30">
-                        🏠 Inicio
-                    </a>
-                    {/* Estos enlaces aún no hacen nada, pero ya dejamos el hueco preparado */}
-                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl font-medium transition-all">
-                        👥 Empleados
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl font-medium transition-all">
-                        ✈️ Vacaciones
-                    </a>
-                </nav>
+            </div>
 
-                <div className="p-4 border-t border-slate-800">
-                    <button 
-                        onClick={logout} 
-                        className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 py-3 rounded-xl transition-all font-bold"
-                    >
-                        🚪 Cerrar Sesión
-                    </button>
+            {/* Alerta si es Administrador */}
+            {isAdmin && (
+                <div className="bg-gradient-to-r from-amber-50 to-white border border-amber-200/60 rounded-2xl p-4 md:p-5 mb-10 flex gap-4 items-center shadow-sm relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400"></div>
+                    <div className="w-10 h-10 rounded-full bg-amber-100/50 flex items-center justify-center text-amber-600 shrink-0 border border-amber-200/50">
+                        <i className="fa-solid fa-shield-halved text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-amber-900 text-sm md:text-base">Modo Administrador</h3>
+                        <p className="text-amber-700/80 text-xs md:text-sm mt-0.5 font-medium">Acceso sin restricciones al portal autorizado.</p>
+                    </div>
                 </div>
-            </aside>
+            )}
 
-            {/* 2. ZONA PRINCIPAL (Derecha) */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                
-                {/* Cabecera Superior */}
-                <header className="bg-white border-b border-gray-200 h-20 flex items-center justify-between px-8 shrink-0">
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Panel de Control</h1>
-                    
-                    <div className="flex items-center gap-4">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-gray-900">{user?.name} {user?.surname}</p>
-                            <p className="text-xs text-corporate font-semibold uppercase tracking-wider">{user?.position || 'Empleado'}</p>
-                        </div>
-                        {/* Avatar redondo con las iniciales */}
-                        <div className="w-11 h-11 bg-gradient-to-br from-corporate to-corporate-dark text-white rounded-full flex items-center justify-center font-bold shadow-md border-2 border-white ring-2 ring-gray-100">
-                            {user?.name?.charAt(0)}{user?.surname?.charAt(0)}
-                        </div>
+            {/* Sección de Datos Personales */}
+            <div className="flex items-center justify-between mb-6 px-1">
+                <h3 className="text-xl font-bold text-slate-800 tracking-tight">Perfil Profesional</h3>
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-full text-xs flex items-center gap-2 border border-emerald-200/60 shadow-sm">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.5)]"></span> Conectado
+                </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {/* Tarjeta 1 */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
+                        <i className="fa-regular fa-id-card text-xl"></i>
                     </div>
-                </header>
-
-                {/* Zona de contenido con scroll */}
-                <div className="flex-1 overflow-auto p-8">
-                    
-                    {/* Banner de Bienvenida con degradado */}
-                    <div className="bg-gradient-to-r from-corporate to-slate-800 rounded-3xl p-8 text-white shadow-xl mb-8 border border-slate-700 relative overflow-hidden">
-                        {/* Decoración de fondo */}
-                        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
-                        <div className="relative z-10">
-                            <h2 className="text-3xl font-extrabold mb-2">¡Bienvenido de nuevo, {user?.name}! 👋</h2>
-                            <p className="text-corporate-light text-lg opacity-90">Aquí tienes tu resumen personal y las herramientas de gestión rápida.</p>
-                        </div>
-                    </div>
-
-                    {/* Alerta si es Administrador */}
-                    {isAdmin && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 flex gap-4 items-center shadow-sm">
-                            <div className="text-4xl">👑</div>
-                            <div>
-                                <h3 className="font-bold text-amber-900 text-lg">Modo Administrador activado</h3>
-                                <p className="text-amber-700 text-sm mt-1">Tienes acceso sin restricciones a todo el portal. Puedes gestionar a los usuarios y aprobar solicitudes.</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Tarjeta de Datos Personales */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h3 className="text-xl font-bold text-gray-800">Información del Perfil</h3>
-                            <span className="px-4 py-1.5 bg-green-100 text-green-700 font-bold rounded-full text-sm flex items-center gap-2 border border-green-200">
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Activo
-                            </span>
-                        </div>
-                        
-                        <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">DNI Registrado</p>
-                                <p className="text-lg font-bold text-gray-900">{user?.dni}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Correo Electrónico</p>
-                                <p className="text-lg font-bold text-gray-900 truncate">{user?.email}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Puesto Actual</p>
-                                <p className="text-lg font-bold text-gray-900">{user?.position || 'Pendiente'}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Departamento</p>
-                                <p className="text-lg font-bold text-gray-900">{user?.department_id ? `Dep. #${user.department_id}` : 'No asignado'}</p>
-                            </div>
-                        </div>
-                    </div>
-
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">DNI Registrado</p>
+                    <p className="text-lg font-bold text-slate-800">{user.dni}</p>
                 </div>
-            </main>
+
+                {/* Tarjeta 2 */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
+                        <i className="fa-regular fa-envelope text-xl"></i>
+                    </div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Correo Electrónico</p>
+                    <p className="text-sm font-bold text-slate-800 truncate" title={user.email}>{user.email}</p>
+                </div>
+
+                {/* Tarjeta 3 */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
+                        <i className="fa-solid fa-briefcase text-xl"></i>
+                    </div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Puesto Actual</p>
+                    <p className="text-lg font-bold text-slate-800">{user.position || 'Pendiente'}</p>
+                </div>
+
+                {/* Tarjeta 4 */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
+                        <i className="fa-regular fa-building text-xl"></i>
+                    </div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Departamento</p>
+                    <p className="text-lg font-bold text-slate-800">{user.department_id ? 'Dep. #' + user.department_id : 'No asignado'}</p>
+                </div>
+            </div>
+
         </div>
     );
 };
