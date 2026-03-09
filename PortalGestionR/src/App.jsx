@@ -8,6 +8,7 @@ import Vacations from './pages/Vacations';
 import AdminVacations from './pages/AdminVacations';
 import AdminSettings from './pages/AdminSettings';
 import ChangePassword from './pages/ChangePassword';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/gestion-vacaciones" element={<AdminVacations />} />
             <Route path="/organizacion" element={<AdminSettings />} />
             <Route path="/seguridad" element={<ChangePassword />} />
+            <Route path="/perfil" element={<Profile />} />
           </Route>
         </Route>
 

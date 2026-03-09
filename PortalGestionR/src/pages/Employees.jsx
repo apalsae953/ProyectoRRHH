@@ -22,8 +22,8 @@ const Employees = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState(null);
 
-    // Paginación y Ordenamiento
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const itemsPerPage = 10;
 
@@ -125,8 +125,30 @@ const Employees = () => {
         setSortConfig({ key, direction });
     };
 
+    // Helper func for roles
+    const formatRole = (roles) => {
+        if (!roles || roles.length === 0) return 'Empleado';
+        if (roles.includes('admin')) return 'Administrador';
+        if (roles.includes('hr_director')) return 'RRHH';
+        return 'Empleado';
+    };
+
+    // Filtrar los empleados por búsqueda
+    const filteredEmployees = employees.filter(emp => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        const fullName = `${emp.nombre || ''} ${emp.apellidos || ''}`.toLowerCase();
+        return (
+            fullName.includes(searchLower) ||
+            (emp.email && emp.email.toLowerCase().includes(searchLower)) ||
+            (emp.dni && emp.dni.toLowerCase().includes(searchLower)) ||
+            (emp.puesto && emp.puesto.nombre && emp.puesto.nombre.toLowerCase().includes(searchLower)) ||
+            (emp.departamento && emp.departamento.nombre && emp.departamento.nombre.toLowerCase().includes(searchLower))
+        );
+    });
+
     // Ordenar los empleados
-    const sortedEmployees = [...employees].sort((a, b) => {
+    const sortedEmployees = [...filteredEmployees].sort((a, b) => {
         if (!sortConfig.key) return 0;
 
         let aValue = a[sortConfig.key] || '';
@@ -150,7 +172,7 @@ const Employees = () => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentEmployees = sortedEmployees.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(employees.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
 
     const changePage = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -185,6 +207,19 @@ const Employees = () => {
                 </div>
             </div>
 
+            <div className="p-6 md:p-8 pb-0 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="relative w-full sm:w-96">
+                    <i className="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, DNI, email o puesto..."
+                        value={searchTerm}
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate/50 focus:bg-white transition-all text-sm"
+                    />
+                </div>
+            </div>
+
             <div className="overflow-x-auto p-6 md:p-8">
                 <table className="w-full text-left border-separate border-spacing-y-3">
                     <thead>
@@ -198,10 +233,11 @@ const Employees = () => {
                             <th className="px-4 pb-2 font-bold hidden md:table-cell text-left">DNI</th>
                             <th className="px-4 pb-2 font-bold hidden sm:table-cell text-left cursor-pointer hover:text-corporate transition-colors group" onClick={() => handleSort('puesto')}>
                                 <div className="flex items-center gap-2">
-                                    <span>Puesto</span>
+                                    <span>Puesto y Dept.</span>
                                     <i className={'fa-solid ' + (sortConfig.key === 'puesto' ? (sortConfig.direction === 'asc' ? 'fa-sort-up text-corporate' : 'fa-sort-down text-corporate') : 'fa-sort opacity-20 group-hover:opacity-50') + ' text-xs mt-1 transition-opacity'}></i>
                                 </div>
                             </th>
+                            <th className="px-4 pb-2 font-bold hidden lg:table-cell text-left">Rol</th>
                             <th className="px-4 pb-2 font-bold text-center cursor-pointer hover:text-corporate transition-colors group" onClick={() => handleSort('estado')}>
                                 <div className="flex items-center justify-center gap-2">
                                     <span>Estado</span>
@@ -216,8 +252,12 @@ const Employees = () => {
                             <tr key={emp.id} className="bg-white shadow-[0_0_15px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 rounded-2xl group border border-slate-50">
                                 <td className="p-4 rounded-l-2xl border-t border-b border-l border-slate-100 group-hover:border-corporate/20 transition-colors">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-corporate/10 text-corporate font-bold flex items-center justify-center shrink-0 border border-corporate/20">
-                                            {emp.nombre.charAt(0)}{emp.apellidos.charAt(0)}
+                                        <div className="w-10 h-10 rounded-xl bg-corporate text-white font-bold flex items-center justify-center shrink-0 border border-corporate/20 overflow-hidden shadow-sm">
+                                            {emp.photo ? (
+                                                <img src={emp.photo} alt={`${emp.nombre}`} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-xs uppercase">{emp.nombre.charAt(0)}{emp.apellidos.charAt(0)}</span>
+                                            )}
                                         </div>
                                         <div>
                                             <p className="font-bold text-slate-800 text-base">{emp.nombre} {emp.apellidos}</p>
@@ -229,7 +269,16 @@ const Employees = () => {
                                     {emp.dni}
                                 </td>
                                 <td className="p-4 font-medium text-slate-600 hidden sm:table-cell border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                    {emp.puesto?.nombre || 'No asignado'}
+                                    <div>{emp.puesto?.nombre || 'Sin puesto'}</div>
+                                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">{emp.departamento?.nombre || 'Sin departamento'}</div>
+                                </td>
+                                <td className="p-4 font-medium text-slate-600 hidden lg:table-cell border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
+                                    <span className={"inline-flex items-center px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md " +
+                                        (formatRole(emp.roles) === 'Administrador' ? 'bg-purple-100 text-purple-700' :
+                                            formatRole(emp.roles) === 'RRHH' ? 'bg-amber-100 text-amber-700' :
+                                                'bg-slate-100 text-slate-500')}>
+                                        {formatRole(emp.roles)}
+                                    </span>
                                 </td>
                                 <td className="p-4 text-center border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
                                     <div className={'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border ' + (emp.estado === 'inactive' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}>
@@ -255,7 +304,7 @@ const Employees = () => {
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between mt-6 px-2">
                         <span className="text-sm text-slate-500 font-medium">
-                            Mostrando <span className="font-bold text-corporate">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, employees.length)}</span> de <span className="font-bold text-slate-800">{employees.length}</span>
+                            Mostrando <span className="font-bold text-corporate">{currentEmployees.length > 0 ? indexOfFirstItem + 1 : 0}-{Math.min(indexOfLastItem, filteredEmployees.length)}</span> de <span className="font-bold text-slate-800">{filteredEmployees.length}</span>
                         </span>
                         <div className="flex items-center gap-2">
                             <button

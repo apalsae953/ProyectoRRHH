@@ -19,6 +19,7 @@ class EmployeeResource extends JsonResource
             'nombre' => $this->name,
             'apellidos' => $this->surname,
             'email' => $this->email,
+            'photo' => $this->photo,
             'dni' => $this->dni,
             'telefono' => $this->phone,
             'puesto' => $this->whenLoaded('position', function () {

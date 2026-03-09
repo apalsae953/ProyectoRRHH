@@ -7,8 +7,9 @@ const AdminVacations = () => {
     const [actionLoading, setActionLoading] = useState(null); // Para saber qué botón está cargando
     const [actionModal, setActionModal] = useState({ isOpen: false, id: null, type: null, message: '' });
 
-    // Paginación y Ordenamiento
+    // Paginación, Ordenamiento y Búsqueda
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const [sortKey, setSortKey] = useState('fecha_inicio');
     const [sortDirection, setSortDirection] = useState('desc');
     const itemsPerPage = 10;
@@ -58,7 +59,17 @@ const AdminVacations = () => {
         setSortDirection(direction);
     };
 
-    const sortedVacations = [...vacations].sort((a, b) => {
+    const filteredVacations = vacations.filter(v => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        const fullName = `${v.empleado?.nombre || ''} ${v.empleado?.apellidos || ''}`.toLowerCase();
+        return (
+            fullName.includes(searchLower) ||
+            (v.estado && v.estado.toLowerCase().includes(searchLower))
+        );
+    });
+
+    const sortedVacations = [...filteredVacations].sort((a, b) => {
         let aValue, bValue;
 
         if (sortKey === 'empleado') {
@@ -78,7 +89,7 @@ const AdminVacations = () => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = sortedVacations.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(sortedVacations.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredVacations.length / itemsPerPage);
 
     const changePage = (pageNumber) => {
         setCurrentPage(pageNumber);
@@ -133,6 +144,19 @@ const AdminVacations = () => {
                     <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
                         {vacations.filter(v => v.estado === 'pending').length} Pendientes
                     </span>
+                </div>
+
+                <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white">
+                    <div className="relative w-full sm:w-96">
+                        <i className="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="text"
+                            placeholder="Buscar por empleado o estado..."
+                            value={searchTerm}
+                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                            className="w-full pl-11 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate/50 focus:bg-white transition-all text-sm"
+                        />
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">

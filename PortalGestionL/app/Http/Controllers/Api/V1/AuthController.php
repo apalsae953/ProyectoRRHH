@@ -88,4 +88,34 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Se ha enviado una nueva contraseña a tu correo electrónico.']);
     }
+
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'surname' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'photo' => 'nullable|image|max:2048', // 2MB max
+        ]);
+
+        $user = $request->user();
+
+        if ($request->has('name')) $user->name = $request->name;
+        if ($request->has('surname')) $user->surname = $request->surname;
+        if ($request->has('email')) $user->email = $request->email;
+        if ($request->has('phone')) $user->phone = $request->phone;
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('profiles', 'public');
+            $user->photo = url(\Illuminate\Support\Facades\Storage::url($path));
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente.',
+            'user' => $user->load('roles')
+        ]);
+    }
 }

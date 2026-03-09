@@ -13,6 +13,7 @@ const Vacations = () => {
 
     // Paginación y Ordenamiento
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const [sortKey, setSortKey] = useState('fecha_inicio');
     const [sortDirection, setSortDirection] = useState('desc');
     const itemsPerPage = 10;
@@ -49,7 +50,18 @@ const Vacations = () => {
         setCurrentPage(1); // Reset to first page on sort change
     };
 
-    const sortedVacations = [...vacations].sort((a, b) => {
+    const filteredVacations = vacations.filter(v => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            (v.estado && v.estado.toLowerCase().includes(searchLower)) ||
+            (v.fecha_inicio && v.fecha_inicio.includes(searchLower)) ||
+            (v.fecha_fin && v.fecha_fin.includes(searchLower)) ||
+            (v.nota && v.nota.toLowerCase().includes(searchLower))
+        );
+    });
+
+    const sortedVacations = [...filteredVacations].sort((a, b) => {
         const aValue = a[sortKey];
         const bValue = b[sortKey];
 
@@ -72,7 +84,7 @@ const Vacations = () => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = sortedVacations.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(sortedVacations.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredVacations.length / itemsPerPage);
 
     const changePage = (pageNumber) => {
         setCurrentPage(pageNumber);
@@ -231,12 +243,25 @@ const Vacations = () => {
 
             {/* Tabla de Historial */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <h3 className="text-lg font-bold text-slate-800">Historial de Solicitudes</h3>
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 font-bold rounded-full text-xs border border-slate-200">
-                        <i className="fa-solid fa-list-ul mr-1.5"></i>
-                        {vacations.length} peticiones
-                    </span>
+                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-slate-800">Historial de Solicitudes</h3>
+                        <span className="px-3 py-1 bg-slate-100 text-slate-600 font-bold rounded-full text-xs border border-slate-200">
+                            <i className="fa-solid fa-list-ul mr-1.5"></i>
+                            {vacations.length} peticiones
+                        </span>
+                    </div>
+
+                    <div className="relative w-full md:w-80">
+                        <i className="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input
+                            type="text"
+                            placeholder="Buscar por fecha, estado o nota..."
+                            value={searchTerm}
+                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                            className="w-full pl-11 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate/50 transition-all text-sm shadow-sm"
+                        />
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto p-6 md:p-8">

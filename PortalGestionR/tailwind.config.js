@@ -8,7 +8,7 @@ export default {
     extend: {
       colors: {
         corporate: {
-          DEFAULT: '#0f4c81', 
+          DEFAULT: '#0f4c81',
           dark: '#0a365c',
           light: '#e6f0fa',
         }
