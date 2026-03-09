@@ -6,7 +6,11 @@ const ProtectedRoute = () => {
 
     // Mientras React le pregunta a Laravel si hay sesión, mostramos un texto de carga
     if (loading) {
-        return <div style={{ padding: '50px', textAlign: 'center' }}>Cargando portal... ⏳</div>;
+        return (
+            <div className="flex justify-center items-center h-screen bg-slate-50">
+                <i className="fa-solid fa-circle-notch fa-spin text-4xl text-corporate opacity-20"></i>
+            </div>
+        );
     }
 
     // Si no hay usuario logueado, lo redirigimos a la página de login

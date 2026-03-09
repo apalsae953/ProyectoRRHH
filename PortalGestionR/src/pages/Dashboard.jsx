@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 const Dashboard = () => {
     const { user } = useAuth(); // Quitamos el logout, que ya se usa en el Layout
 
-    const isAdmin = user && user.roles && user.roles.some(r => r.name === 'admin' || r.name === 'hr_director');
+    const isAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
 
     return (
         <div className="animate-fade-in pb-10">

@@ -21,7 +21,12 @@ class EmployeeResource extends JsonResource
             'email' => $this->email,
             'dni' => $this->dni,
             'telefono' => $this->phone,
-            'puesto' => $this->position,
+            'puesto' => $this->whenLoaded('position', function () {
+                return [
+                    'id' => $this->position->id,
+                    'nombre' => $this->position->name,
+                ];
+            }),
             'estado' => $this->status,
             'fecha_contratacion' => $this->hired_at ? $this->hired_at->format('Y-m-d') : null,
             // Si el departamento está cargado en la consulta, lo devolvemos

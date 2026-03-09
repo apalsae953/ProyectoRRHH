@@ -1,9 +1,26 @@
 import { useState, useEffect } from 'react';
+import axios from '../api/axios';
 import employeeService from '../services/employeeService';
+import { useAuth } from '../context/AuthContext';
 
 const Employees = () => {
+    const { user } = useAuth();
+    const isAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
+
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Modal state for adding employee
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newEmployee, setNewEmployee] = useState({
+        name: '', surname: '', email: '', dni: '', phone: '', position_id: '', department_id: '', roles: 'employee', hired_at: ''
+    });
+    const [departments, setDepartments] = useState([]);
+    const [positions, setPositions] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingEmployee, setEditingEmployee] = useState(null);
 
     // Paginación y Ordenamiento
     const [currentPage, setCurrentPage] = useState(1);
@@ -11,21 +28,93 @@ const Employees = () => {
     const itemsPerPage = 10;
 
     useEffect(() => {
-        const fetchEmployees = async () => {
+        const fetchData = async () => {
             try {
                 const response = await employeeService.getEmployees();
-                // getEmployees ya devuelve la directamenta la data de axios (response.data)
                 const employeeList = response?.data || response || [];
                 setEmployees(Array.isArray(employeeList) ? employeeList : []);
+
+                if (isAdmin) {
+                    const [deptRes, posRes] = await Promise.all([
+                        axios.get('/api/v1/departments'),
+                        axios.get('/api/v1/positions')
+                    ]);
+                    setDepartments(deptRes.data);
+                    setPositions(posRes.data);
+                }
             } catch (error) {
-                console.error("Error al cargar empleados", error);
+                console.error("Error al cargar datos", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchEmployees();
+        fetchData();
     }, []);
+
+    const handleAddEmployee = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setFormError('');
+        try {
+            // Aseguramos que el rol vaya como un array tal y como pide Laravel
+            const payload = {
+                ...newEmployee,
+                roles: [newEmployee.roles]
+            };
+
+            await employeeService.createEmployee(payload);
+            setIsAddModalOpen(false);
+            setNewEmployee({ name: '', surname: '', email: '', dni: '', phone: '', position_id: '', department_id: '', roles: 'employee', hired_at: '' });
+
+            // Recargar empleados
+            setLoading(true);
+            const response = await employeeService.getEmployees();
+            const employeeList = response?.data || response || [];
+            setEmployees(Array.isArray(employeeList) ? employeeList : []);
+        } catch (error) {
+            setFormError(error.response?.data?.message || 'Error al crear empleado');
+        } finally {
+            setIsSubmitting(false);
+            setLoading(false);
+        }
+    };
+
+    const handleEditClick = (emp) => {
+        setEditingEmployee({
+            id: emp.id,
+            name: emp.nombre,
+            surname: emp.apellidos,
+            email: emp.email,
+            phone: emp.telefono || '',
+            position_id: emp.puesto?.id || '',
+            department_id: emp.departamento?.id || '',
+            status: emp.estado || 'active',
+            hired_at: emp.fecha_contratacion || ''
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateEmployee = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setFormError('');
+        try {
+            await employeeService.updateEmployee(editingEmployee.id, editingEmployee);
+            setIsEditModalOpen(false);
+            setEditingEmployee(null);
+
+            // Recargar empleados
+            const response = await employeeService.getEmployees();
+            const employeeList = response?.data || response || [];
+            setEmployees(Array.isArray(employeeList) ? employeeList : []);
+            alert('Empleado actualizado correctamente');
+        } catch (error) {
+            setFormError(error.response?.data?.message || 'Error al actualizar empleado');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     // Función para manejar el clic en las cabeceras de la tabla
     const handleSort = (key) => {
@@ -48,9 +137,8 @@ const Employees = () => {
             aValue = (a.nombre + ' ' + a.apellidos).toLowerCase();
             bValue = (b.nombre + ' ' + b.apellidos).toLowerCase();
         } else if (sortConfig.key === 'estado') {
-            // Actualmente todos dicen 'Activo', pero sirve para el futuro
-            aValue = a.status || 'active';
-            bValue = b.status || 'active';
+            aValue = a.estado || 'active';
+            bValue = b.estado || 'active';
         }
 
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -88,10 +176,12 @@ const Employees = () => {
                         <i className="fa-solid fa-users text-base"></i>
                         {employees.length} trabajadores
                     </span>
-                    <button className="bg-corporate hover:bg-corporate-dark text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
-                        <i className="fa-solid fa-plus text-base"></i>
-                        Añadir
-                    </button>
+                    {isAdmin && (
+                        <button onClick={() => setIsAddModalOpen(true)} className="bg-corporate hover:bg-corporate-dark text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                            <i className="fa-solid fa-plus text-base"></i>
+                            Añadir
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -139,18 +229,21 @@ const Employees = () => {
                                     {emp.dni}
                                 </td>
                                 <td className="p-4 font-medium text-slate-600 hidden sm:table-cell border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                    {emp.puesto || 'No asignado'}
+                                    {emp.puesto?.nombre || 'No asignado'}
                                 </td>
                                 <td className="p-4 text-center border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        Activo
+                                    <div className={'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border ' + (emp.estado === 'inactive' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')}>
+                                        <div className={'w-1.5 h-1.5 rounded-full ' + (emp.estado === 'inactive' ? 'bg-red-500' : 'bg-emerald-500')}></div>
+                                        {emp.estado === 'inactive' ? 'Inactivo' : 'Activo'}
                                     </div>
                                 </td>
                                 <td className="p-4 text-right rounded-r-2xl border-t border-b border-r border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                    <button className="text-slate-400 hover:text-corporate bg-slate-50 hover:bg-corporate/10 font-bold px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-2 group-hover:shadow-sm">
-                                        <span className="text-xs hidden lg:block">Ver Perfil</span>
-                                        <i className="fa-solid fa-arrow-right"></i>
+                                    <button
+                                        onClick={() => handleEditClick(emp)}
+                                        className="text-slate-400 hover:text-corporate bg-slate-50 hover:bg-corporate/10 font-bold px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-2 group-hover:shadow-sm"
+                                    >
+                                        <span className="text-xs hidden lg:block">Editar</span>
+                                        <i className="fa-solid fa-pen-to-square"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -196,6 +289,163 @@ const Employees = () => {
                     </div>
                 )}
             </div>
+
+            {/* Modal para añadir empleado */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="text-xl font-bold text-slate-800">Añadir Nuevo Empleado</h3>
+                            <button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            {formError && (
+                                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+                                    <i className="fa-solid fa-circle-exclamation mr-2"></i>
+                                    {formError}
+                                </div>
+                            )}
+                            <form onSubmit={handleAddEmployee} className="space-y-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Nombre</label>
+                                        <input type="text" required value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. Ana" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Apellidos</label>
+                                        <input type="text" required value={newEmployee.surname} onChange={e => setNewEmployee({ ...newEmployee, surname: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. García" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">DNI</label>
+                                        <input type="text" required value={newEmployee.dni} onChange={e => setNewEmployee({ ...newEmployee, dni: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="12345678Z" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Email</label>
+                                        <input type="email" required value={newEmployee.email} onChange={e => setNewEmployee({ ...newEmployee, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="correo@ejemplo.com" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Teléfono</label>
+                                        <input type="text" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. 600000000" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Puesto a desempeñar</label>
+                                        <select value={newEmployee.position_id} onChange={e => setNewEmployee({ ...newEmployee, position_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                            <option value="">Selecciona un puesto...</option>
+                                            {positions.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Rol de Sistema</label>
+                                        <select value={newEmployee.roles} onChange={e => setNewEmployee({ ...newEmployee, roles: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                            <option value="employee">Empleado Básico</option>
+                                            <option value="hr_director">Recursos Humanos (RRHH)</option>
+                                            <option value="admin">Administrador Total</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Departamento</label>
+                                        <select value={newEmployee.department_id} onChange={e => setNewEmployee({ ...newEmployee, department_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                            <option value="">Selecciona un departamento...</option>
+                                            {departments.map(d => (
+                                                <option key={d.id} value={d.id}>{d.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha de Contratación</label>
+                                        <input type="date" required value={newEmployee.hired_at} onChange={e => setNewEmployee({ ...newEmployee, hired_at: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
+                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl font-bold bg-corporate hover:bg-corporate-dark text-white transition-colors shadow-md flex items-center gap-2 disabled:opacity-70">
+                                        {isSubmitting ? (
+                                            <><i className="fa-solid fa-spinner fa-spin"></i> Guardando...</>
+                                        ) : (
+                                            <><i className="fa-solid fa-check"></i> Dar de Alta</>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal para editar empleado */}
+            {isEditModalOpen && editingEmployee && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="text-xl font-bold text-slate-800">Editar Empleado: {editingEmployee.name}</h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            <form onSubmit={handleUpdateEmployee} className="space-y-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Nombre</label>
+                                        <input type="text" required value={editingEmployee.name} onChange={e => setEditingEmployee({ ...editingEmployee, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Apellidos</label>
+                                        <input type="text" required value={editingEmployee.surname} onChange={e => setEditingEmployee({ ...editingEmployee, surname: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Email</label>
+                                        <input type="email" required value={editingEmployee.email} onChange={e => setEditingEmployee({ ...editingEmployee, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Teléfono</label>
+                                        <input type="text" value={editingEmployee.phone} onChange={e => setEditingEmployee({ ...editingEmployee, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Puesto</label>
+                                        <select value={editingEmployee.position_id} onChange={e => setEditingEmployee({ ...editingEmployee, position_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                            {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Departamento</label>
+                                        <select value={editingEmployee.department_id} onChange={e => setEditingEmployee({ ...editingEmployee, department_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Estado</label>
+                                        <select value={editingEmployee.status} onChange={e => setEditingEmployee({ ...editingEmployee, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                            <option value="active">Activo</option>
+                                            <option value="inactive">Inactivo</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha de Contratación</label>
+                                        <input type="date" required value={editingEmployee.hired_at} onChange={e => setEditingEmployee({ ...editingEmployee, hired_at: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl font-bold bg-corporate hover:bg-corporate-dark text-white transition-colors shadow-md flex items-center gap-2">
+                                        {isSubmitting ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-save"></i>}
+                                        Guardar Cambios
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

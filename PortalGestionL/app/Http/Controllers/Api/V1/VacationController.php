@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use App\Http\Resources\V1\VacationResource;
 use App\Http\Requests\Api\V1\StoreVacationRequest;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VacationRequestProcessed;
+use App\Mail\VacationRequestedAdmin;
+use App\Models\User;
 
 class VacationController extends Controller
 {
@@ -98,6 +102,13 @@ class VacationController extends Controller
             'note' => $request->note,
         ]);
 
+        // Enviar aviso al Admin (jefesupremogm@gmail.com)
+        try {
+            Mail::to('jefesupremogm@gmail.com')->send(new VacationRequestedAdmin($vacation));
+        } catch (\Exception $e) {
+            \Log::error('Error avisando al admin de nueva solicitud: ' . $e->getMessage());
+        }
+
         return new VacationResource($vacation);
     }
 
@@ -114,16 +125,39 @@ class VacationController extends Controller
             return response()->json(['message' => 'Acceso denegado. No es tu solicitud.'], 403);
         }
 
-        // Solo se puede cancelar si está en estado 'pending' o 'draft' 
-        if (!in_array($vacation->status, ['draft', 'pending'])) {
-            return response()->json(['message' => 'Solo se pueden modificar/cancelar solicitudes pendientes.'], 422);
-        }
-
         // Si la petición incluye el cambio de estado a cancelado
         if ($request->has('status') && $request->status === 'canceled') {
-            $vacation->update(['status' => 'canceled']);
+            
+            // Regla: Cancelar solo si 'pending' o 'approved' y NO ha empezado el periodo
+            if (!in_array($vacation->status, ['pending', 'approved'])) {
+                return response()->json(['message' => 'Solo se pueden cancelar solicitudes pendientes o aprobadas.'], 422);
+            }
+
+            $startDate = Carbon::parse($vacation->start_date);
+            if ($startDate->isPast() || $startDate->isToday()) {
+                return response()->json(['message' => 'No puedes cancelar vacaciones que ya han empezado o han pasado.'], 422);
+            }
+
+            // Exigimos motivo de cancelación
+            $request->validate(['cancel_reason' => 'required|string|min:5']);
+
+            // Si estaba aprobada, RESTAURAMOS el saldo al trabajador
+            if ($vacation->status === 'approved') {
+                $year = $startDate->year;
+                $balance = VacationBalance::where('user_id', $vacation->user_id)->where('year', $year)->first();
+                if ($balance) {
+                    $balance->taken_days -= $vacation->days;
+                    $balance->save();
+                }
+            }
+
+            $vacation->update([
+                'status' => 'canceled',
+                'cancel_reason' => $request->cancel_reason
+            ]);
+
             return response()->json([
-                'message' => 'Solicitud cancelada correctamente.', 
+                'message' => 'Solicitud cancelada correctamente y saldo actualizado.', 
                 'data' => new VacationResource($vacation)
             ]);
         }
@@ -160,10 +194,16 @@ class VacationController extends Controller
         // Actualizar el estado y guardar quién lo aprobó
         $vacation->update([
             'status' => 'approved',
-            'approver_id' => $user->id
+            'approver_id' => $user->id,
+            'admin_message' => $request->admin_message,
         ]);
 
         // Disparar evento de notificación al empleado por email 
+        try {
+            Mail::to($vacation->user->email)->send(new VacationRequestProcessed($vacation));
+        } catch (\Exception $e) {
+            \Log::error('Error enviando correo de vacaciones: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Vacaciones aprobadas y saldo descontado correctamente.', 
@@ -187,14 +227,54 @@ class VacationController extends Controller
         // Actualizar el estado y guardar quién lo rechazó
         $vacation->update([
             'status' => 'rejected',
-            'approver_id' => $user->id
+            'approver_id' => $user->id,
+            'admin_message' => $request->admin_message,
         ]);
 
         // Disparar evento de notificación al empleado por email 
+        try {
+            Mail::to($vacation->user->email)->send(new VacationRequestProcessed($vacation));
+        } catch (\Exception $e) {
+            \Log::error('Error enviando correo de rechazo de vacaciones: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Vacaciones rechazadas.', 
             'data' => new VacationResource($vacation)
         ]);
+    }
+
+    /**
+     * DELETE /api/v1/vacations/{id}
+     * Borrar del historial si está cancelada, rechazada o es pasada
+     */
+    public function destroy(Request $request, Vacation $vacation)
+    {
+        $user = $request->user();
+
+        // Solo puede borrar su propia solicitud
+        if ($vacation->user_id !== $user->id) {
+            return response()->json(['message' => 'Solo puedes borrar tus propias solicitudes.'], 403);
+        }
+
+        $canDelete = false;
+
+        // 1. Si está cancelada o rechazada
+        if (in_array($vacation->status, ['canceled', 'rejected'])) {
+            $canDelete = true;
+        }
+
+        // 2. Si ya ha pasado la fecha de fin (histórico)
+        if (Carbon::parse($vacation->end_date)->isPast()) {
+            $canDelete = true;
+        }
+
+        if (!$canDelete) {
+            return response()->json(['message' => 'No puedes borrar una solicitud activa o pendiente.'], 422);
+        }
+
+        $vacation->delete();
+
+        return response()->json(['message' => 'Solicitud eliminada del historial.']);
     }
 }

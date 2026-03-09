@@ -27,7 +27,7 @@ class User extends Authenticatable
         'dni_normalizado',
         'password',
         'phone',
-        'position',
+        'position_id',
         'department_id',
         'hired_at',
         'status',
@@ -71,6 +71,12 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
+    // Un usuario pertenece a un puesto
+    public function position()
+    {
+        return $this->belongsTo(Position::class);
+    }
+
     // Un usuario tiene muchos documentos
     public function documents()
     {
@@ -87,5 +93,10 @@ class User extends Authenticatable
     public function vacationBalances()
     {
         return $this->hasMany(VacationBalance::class);
+    }
+
+    public function getFullNameAttribute()
+    {
+        return "{$this->name} {$this->surname}";
     }
 }

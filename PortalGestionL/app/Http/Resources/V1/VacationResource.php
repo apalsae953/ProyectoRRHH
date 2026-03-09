@@ -16,6 +16,7 @@ class VacationResource extends JsonResource
             'dias_solicitados' => $this->days,
             'estado' => $this->status, // draft, pending, approved, rejected, canceled
             'nota' => $this->note,
+            'mensaje_admin' => $this->admin_message,
             'fecha_solicitud' => $this->created_at->format('Y-m-d H:i:s'),
             
             // Quién la aprobó (si ya fue aprobada)

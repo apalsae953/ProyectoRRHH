@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import axios from '../api/axios';
 
 const Login = () => {
     const [dni, setDni] = useState('');
@@ -9,6 +10,11 @@ const Login = () => {
 
     const { login, user } = useAuth();
     const navigate = useNavigate();
+
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotDni, setForgotDni] = useState('');
+    const [forgotMessage, setForgotMessage] = useState({ type: '', text: '' });
+    const [isForgotLoading, setIsForgotLoading] = useState(false);
 
     useEffect(() => {
         if (user) navigate('/');
@@ -23,6 +29,20 @@ const Login = () => {
             navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || 'Error al conectar con el servidor');
+        }
+    };
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setIsForgotLoading(true);
+        setForgotMessage({ type: '', text: '' });
+        try {
+            const response = await axios.post('/api/v1/auth/forgot-password', { dni: forgotDni });
+            setForgotMessage({ type: 'success', text: response.data.message });
+        } catch (err) {
+            setForgotMessage({ type: 'error', text: err.response?.data?.message || 'Error al solicitar el cambio' });
+        } finally {
+            setIsForgotLoading(false);
         }
     };
 
@@ -78,9 +98,63 @@ const Login = () => {
                     >
                         Iniciar Sesión
                     </button>
+
+                    <div className="text-center mt-6">
+                        <button
+                            type="button"
+                            onClick={() => setShowForgotModal(true)}
+                            className="text-corporate-dark font-bold hover:text-corporate transition-colors text-sm underline underline-offset-4 decoration-2"
+                        >
+                            ¿Has olvidado tu contraseña?
+                        </button>
+                    </div>
                 </form>
             </div>
 
+            {/* Modal de Olvido de Contraseña */}
+            {showForgotModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 p-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-slate-800">Recuperar Acceso</h3>
+                            <button onClick={() => { setShowForgotModal(false); setForgotMessage({ type: '', text: '' }); }} className="text-slate-400 hover:text-slate-600">
+                                <i className="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+
+                        <p className="text-slate-500 text-sm mb-6 font-medium">Introduce tu DNI y te enviaremos una contraseña temporal nueva a tu correo electrónico.</p>
+
+                        {forgotMessage.text && (
+                            <div className={`mb-6 p-4 rounded-xl text-xs font-bold ${forgotMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                {forgotMessage.text}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Tu DNI</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={forgotDni}
+                                    onChange={e => setForgotDni(e.target.value)}
+                                    placeholder="12345678X"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-corporate focus:border-corporate outline-none transition-all font-bold"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isForgotLoading}
+                                className="w-full bg-corporate hover:bg-corporate-dark text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group disabled:opacity-70"
+                            >
+                                {isForgotLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-paper-plane group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>}
+                                Enviar Contraseña
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

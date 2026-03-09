@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 
 const AdminLayout = () => {
     const { user, logout } = useAuth();
+    const isAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
     const location = useLocation(); // Para saber en qué página estamos y pintar el botón activo
 
     return (
@@ -27,14 +28,30 @@ const AdminLayout = () => {
                         <i className={'fa-solid fa-plane transition-transform duration-300 text-lg ' + (location.pathname === '/vacaciones' ? 'text-corporate scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
                         Vacaciones
                     </Link>
+                    {isAdmin && (
+                        <>
+                            <Link to="/gestion-vacaciones" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/gestion-vacaciones' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'hover:bg-white/5 hover:text-white')}>
+                                <i className={'fa-solid fa-scale-balanced transition-transform duration-300 text-lg ' + (location.pathname === '/gestion-vacaciones' ? 'text-amber-700 scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
+                                Gestión Vacaciones
+                            </Link>
+
+                            <Link to="/organizacion" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/organizacion' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'hover:bg-white/5 hover:text-white')}>
+                                <i className={'fa-solid fa-sitemap transition-transform duration-300 text-lg ' + (location.pathname === '/organizacion' ? 'text-purple-700 scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
+                                Organización
+                            </Link>
+                        </>
+                    )}
                 </nav>
 
-                <div className="p-4 border-t border-slate-800/50">
-                    <button onClick={logout} className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-white/5 py-3.5 rounded-xl transition-all duration-300 font-medium group">
-                        <i className="fa-solid fa-arrow-right-from-bracket transition-transform group-hover:-translate-x-1 text-lg"></i>
-                        Cerrar Sesión
-                    </button>
-                </div>
+                <Link to="/seguridad" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/seguridad' ? 'bg-slate-800 text-white shadow-inner border border-slate-700' : 'hover:bg-white/5 hover:text-white')}>
+                    <i className={'fa-solid fa-shield-halved transition-transform duration-300 text-lg ' + (location.pathname === '/seguridad' ? 'text-corporate scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
+                    Seguridad
+                </Link>
+
+                <button onClick={logout} className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-white/5 py-3.5 rounded-xl transition-all duration-300 font-medium group text-sm border-t border-slate-800/50 mt-4">
+                    <i className="fa-solid fa-arrow-right-from-bracket transition-transform group-hover:-translate-x-1 text-lg"></i>
+                    Cerrar Sesión
+                </button>
             </aside>
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden relative">

@@ -20,6 +20,7 @@ class Vacation extends Model
         'status',
         'approver_id',
         'note',
+        'admin_message',
     ];
 
     protected $casts = [

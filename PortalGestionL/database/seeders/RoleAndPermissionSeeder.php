@@ -30,7 +30,7 @@ class RoleAndPermissionSeeder extends Seeder
             'dni_normalizado' => '12345678Z',
             'password' => Hash::make('password123'), 
             'phone' => '600000000',
-            'position' => 'System Admin',
+            'position_id' => null,
             'status' => 'active',
             // department_id y hired_at quedan nulos por defecto como configuramos en la migración
         ]);

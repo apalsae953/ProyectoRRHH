@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\HolidayDateController;
 use App\Http\Controllers\Api\V1\VacationBalanceController;
 use App\Http\Controllers\Api\V1\VacationController;
+use App\Http\Controllers\Api\V1\DepartmentController;
+use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Resources\V1\EmployeeResource;
 
 Route::prefix('v1')->group(function () {
@@ -15,6 +17,7 @@ Route::prefix('v1')->group(function () {
     // Rutas públicas de Autenticación
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     });
 
     // Rutas protegidas (Requieren el token de Sanctum)
@@ -23,10 +26,11 @@ Route::prefix('v1')->group(function () {
         // Logout
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         
-        // Obtener perfil actual
         Route::get('/auth/me', function (Request $request) {
-            return response()->json($request->user());
+            return response()->json($request->user()->load('roles'));
         });
+
+        Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
         // --- EMPLEADOS ---
         
@@ -39,6 +43,10 @@ Route::prefix('v1')->group(function () {
         // CRUD completo de empleados (index, store, show, update, destroy)
         // Esto genera automáticamente las rutas GET, POST, PUT/PATCH y DELETE para /employees
         Route::apiResource('employees', EmployeeController::class);
+        
+        // --- DEPARTAMENTOS Y PUESTOS ---
+        Route::apiResource('departments', DepartmentController::class);
+        Route::apiResource('positions', PositionController::class);
         
         // --- DOCUMENTOS Y NÓMINAS ---
         
@@ -59,6 +67,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/vacations/me', [VacationController::class, 'myVacations']); 
         Route::post('/vacations', [VacationController::class, 'store']); 
         Route::patch('/vacations/{vacation}', [VacationController::class, 'update']);
+        Route::delete('/vacations/{vacation}', [VacationController::class, 'destroy']);
 
         // Acciones de RRHH / Admin
         Route::get('/vacations', [VacationController::class, 'index']);

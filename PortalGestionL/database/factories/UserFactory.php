@@ -35,7 +35,6 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= \Illuminate\Support\Facades\Hash::make('password123'),
             'phone' => fake()->mobileNumber(),
-            'position' => fake()->jobTitle(),
             'status' => fake()->randomElement(['active', 'active', 'active', 'inactive']), 
             'hired_at' => fake()->dateTimeBetween('-5 years', 'now'),
             'remember_token' => \Illuminate\Support\Str::random(10),
