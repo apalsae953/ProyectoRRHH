@@ -31,6 +31,24 @@ class DocumentController extends Controller
         return DocumentResource::collection($documents);
     }
 
+    public function employeeDocuments(Request $request, User $employee)
+    {
+        if (!$request->user()->hasRole(['admin', 'hr_director'])) {
+            return response()->json(['message' => 'Acceso denegado'], 403);
+        }
+
+        $query = $employee->documents();
+
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->has('period_year')) {
+            $query->where('period_year', $request->period_year);
+        }
+
+        return DocumentResource::collection($query->latest()->paginate(20));
+    }
+
 
     public function store(StoreDocumentRequest $request, User $employee)
     {
@@ -69,7 +87,30 @@ class DocumentController extends Controller
         }
 
         // Descarga directa del archivo privado
-        return Storage::download($document->path, $document->title . '.pdf');
+        // Determinar extensión basándonos en el mime type
+        $extension = 'pdf';
+        if (str_contains($document->mime, 'image/jpeg')) $extension = 'jpg';
+        elseif (str_contains($document->mime, 'image/png')) $extension = 'png';
+        
+        return Storage::download($document->path, $document->title . '.' . $extension);
+    }
+
+    public function update(Request $request, Document $document)
+    {
+        if (!$request->user()->hasRole(['admin', 'hr_director'])) {
+            return response()->json(['message' => 'Acceso denegado'], 403);
+        }
+
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'nullable|in:payroll,contract,certificate,other',
+            'period_year' => 'nullable|integer',
+            'period_month' => 'nullable|integer',
+        ]);
+
+        $document->update($validatedData);
+
+        return new DocumentResource($document);
     }
 
     public function destroy(Request $request, Document $document)

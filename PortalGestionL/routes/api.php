@@ -54,13 +54,15 @@ Route::prefix('v1')->group(function () {
         // El empleado ve sus propios documentos (con filtros)
         Route::get('/employees/me/documents', [DocumentController::class, 'myDocuments']);
         
-        // RRHH o Admin suben un documento a un empleado específico
+        // RRHH o Admin gestionan documentos de un empleado específico
+        Route::get('/employees/{employee}/documents-list', [DocumentController::class, 'employeeDocuments']);
         Route::post('/employees/{employee}/documents', [DocumentController::class, 'store']);
         
         // Descargar un documento (validando permisos)
         Route::get('/documents/{document}/download', [DocumentController::class, 'download']);
     
-        // RRHH o Admin borran un documento
+        // RRHH o Admin gestionan documentos de un empleado específico
+        Route::patch('/documents/{document}', [DocumentController::class, 'update']);
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy']);
 
         // --- VACACIONES ---

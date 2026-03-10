@@ -11,10 +11,12 @@ class HolidayDateResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'fecha' => $this->date->format('Y-m-d'),
-            'ambito' => $this->scope, // national, center, custom
-            'centro_id' => $this->center_id, // Nulo si es nacional
-            'descripcion' => $this->description,
+            'date' => $this->date->format('Y-m-d'),
+            'fecha' => $this->date->format('Y-m-d'), // Compatibilidad
+            'scope' => $this->scope,
+            'center_id' => $this->center_id,
+            'description' => $this->description,
+            'name' => $this->description, // Compatibilidad con lo que enviaba antes
         ];
     }
 }

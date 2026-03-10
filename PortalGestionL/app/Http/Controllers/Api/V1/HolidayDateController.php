@@ -20,9 +20,31 @@ class HolidayDateController extends Controller
 
     public function store(StoreHolidayDateRequest $request)
     {
-        $holiday = HolidayDate::create($request->validated());
+        $startDate = \Carbon\Carbon::parse($request->date);
+        $endDate = $request->date_end ? \Carbon\Carbon::parse($request->date_end) : $startDate;
         
-        return new HolidayDateResource($holiday);
+        $createdHolidays = [];
+        
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
+            // Solo creamos si no existe ya un festivo ese día
+            $exists = HolidayDate::where('date', $currentDate->format('Y-m-d'))->exists();
+            
+            if (!$exists) {
+                $holiday = HolidayDate::create([
+                    'date' => $currentDate->format('Y-m-d'),
+                    'scope' => $request->scope,
+                    'center_id' => $request->center_id,
+                    'description' => $request->description,
+                ]);
+                $createdHolidays[] = $holiday;
+            }
+            
+            $currentDate->addDay();
+        }
+        
+        // Retornamos el último creado o una colección
+        return HolidayDateResource::collection($createdHolidays);
     }
 
     public function destroy(Request $request, HolidayDate $holiday)

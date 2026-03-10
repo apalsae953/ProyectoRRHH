@@ -74,9 +74,17 @@ class VacationController extends Controller
         }
 
         // --- CÁLCULO DE DÍAS ---
-        // Aquí calcularíamos los días laborables restando fines de semana y la tabla 'holiday_dates'
-        $daysRequested = $startDate->diffInDaysFiltered(function (Carbon $date) {
-            return $date->isWeekday(); // Solo cuenta de lunes a viernes
+        // Obtenemos los festivos registrados en esas fechas
+        $holidays = \App\Models\HolidayDate::whereBetween('date', [$startDate, $endDate])
+            ->pluck('date')
+            ->map(function($date) {
+                return $date->format('Y-m-d');
+            })
+            ->toArray();
+
+        // Aquí calculamos los días laborables restando fines de semana y la tabla 'holiday_dates'
+        $daysRequested = $startDate->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
+            return $date->isWeekday() && !in_array($date->format('Y-m-d'), $holidays); // Solo cuenta de lunes a viernes y no festivos
         }, $endDate) + 1; // +1 para incluir el día de inicio
 
         // --- Validar Saldo ---

@@ -57,8 +57,15 @@ class EmployeeController extends Controller
         ]);
 
         // Asignar roles si vienen en la petición
+        // Solo los administradores pueden asignar roles distintos a 'employee'
+        $currentUser = $request->user();
         if ($request->has('roles')) {
-            $user->assignRole($request->roles);
+            if ($currentUser && $currentUser->hasRole('admin')) {
+                $user->syncRoles($request->roles);
+            } else {
+                // Si no es admin, ignoramos los roles enviados y ponemos el por defecto
+                $user->assignRole('employee');
+            }
         } else {
             $user->assignRole('employee'); // Este es el rol por defecto
         }
@@ -98,23 +105,51 @@ class EmployeeController extends Controller
     {
         $user = $request->user();
         if (!$user->hasRole(['admin', 'hr_director'])) {
-            return response()->json(['message' => 'Acceso denegado.'], 403);
+            return response()->json(['message' => 'Acceso denegado. No tienes permisos para editar empleados.'], 403);
         }
 
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $employee->id,
+            'dni' => 'required|string|unique:users,dni,' . $employee->id, // Permitir editar DNI
             'phone' => 'nullable|string',
             'position_id' => 'required|exists:positions,id',
             'department_id' => 'required|exists:departments,id',
             'status' => 'required|in:active,inactive',
             'hired_at' => 'required|date',
+            'roles' => 'sometimes|array', // Validar roles si vienen
         ]);
 
-        $employee->update($validatedData);
+        // Normalizar DNI si ha cambiado
+        $dniNormalizado = strtoupper(str_replace(['-', ' '], '', $validatedData['dni']));
 
-        return new EmployeeResource($employee->load(['department', 'position']));
+        // Solo actualizar campos básicos
+        $employee->update([
+            'name' => $validatedData['name'],
+            'surname' => $validatedData['surname'],
+            'email' => $validatedData['email'],
+            'dni' => $validatedData['dni'],
+            'dni_normalizado' => $dniNormalizado,
+            'phone' => $validatedData['phone'],
+            'position_id' => $validatedData['position_id'],
+            'department_id' => $validatedData['department_id'],
+            'status' => $validatedData['status'],
+            'hired_at' => $validatedData['hired_at'],
+        ]);
+
+        // Manejo de roles: Solo los administradores pueden cambiar roles
+        if ($request->has('roles')) {
+            if ($user->hasRole('admin')) {
+                $employee->syncRoles($validatedData['roles']);
+            } else {
+                // Si es HR pero no admin, y trata de cambiar roles, podríamos devolver error o simplemente ignorar.
+                // Según el requerimiento "Solo los admin pueden editar los roles", lo ignoramos o avisamos.
+                // Aquí optamos por no cambiar nada si no es admin.
+            }
+        }
+
+        return new EmployeeResource($employee->load(['department', 'position', 'roles']));
     }
 
   /**

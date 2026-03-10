@@ -9,6 +9,9 @@ import AdminVacations from './pages/AdminVacations';
 import AdminSettings from './pages/AdminSettings';
 import ChangePassword from './pages/ChangePassword';
 import Profile from './pages/Profile';
+import Documents from './pages/Documents';
+import TeamCalendar from './pages/TeamCalendar';
+import Holidays from './pages/Holidays';
 
 function App() {
   return (
@@ -22,8 +25,11 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/empleados" element={<Employees />} />
             <Route path="/vacaciones" element={<Vacations />} />
+            <Route path="/calendario" element={<TeamCalendar />} />
+            <Route path="/festivos" element={<Holidays />} />
             <Route path="/gestion-vacaciones" element={<AdminVacations />} />
             <Route path="/organizacion" element={<AdminSettings />} />
+            <Route path="/documentos" element={<Documents />} />
             <Route path="/seguridad" element={<ChangePassword />} />
             <Route path="/perfil" element={<Profile />} />
           </Route>

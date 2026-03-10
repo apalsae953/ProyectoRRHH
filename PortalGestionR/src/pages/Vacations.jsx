@@ -4,6 +4,7 @@ import vacationService from '../services/vacationService';
 const Vacations = () => {
     const [vacations, setVacations] = useState([]);
     const [balance, setBalance] = useState(null);
+    const [holidays, setHolidays] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -21,12 +22,14 @@ const Vacations = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [vacationsRes, balanceRes] = await Promise.all([
+            const [vacationsRes, balanceRes, holidayRes] = await Promise.all([
                 vacationService.getMyVacations(),
-                vacationService.getMyBalance().catch(() => null)
+                vacationService.getMyBalance().catch(() => null),
+                import('../api/axios').then(m => m.default.get('/api/v1/holidays'))
             ]);
 
             setVacations(vacationsRes.data?.data || vacationsRes.data || []);
+            setHolidays(holidayRes.data?.data || []);
             const balanceData = balanceRes?.data?.data || balanceRes?.data || {
                 dias_generados_hasta_hoy: 0,
                 dias_disfrutados: 0,
@@ -205,7 +208,7 @@ const Vacations = () => {
             </div>
 
             {/* Cabecera con estadísticas rápidas o balances */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 group/stats">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 group/stats">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md hover:border-corporate/30 transition-all duration-300 group relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-corporate/5 rotate-45 translate-x-12 -translate-y-8 blur-2xl group-hover:bg-corporate/10 transition-colors"></div>
                     <div className="w-12 h-12 bg-corporate/10 text-corporate rounded-2xl flex items-center justify-center text-xl shadow-inner border border-corporate/20 shrink-0 z-10">
@@ -239,108 +242,126 @@ const Vacations = () => {
                         <p className="text-3xl font-black text-emerald-600 tracking-tight">{balance?.dias_totales_disponibles || 22} <span className="text-sm font-bold opacity-70">días</span></p>
                     </div>
                 </div>
+
+                {/* Próximos Festivos */}
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4 hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Próximos Festivos</h4>
+                        <i className="fa-solid fa-calendar-day text-corporate"></i>
+                    </div>
+                    <div className="space-y-3">
+                        {holidays.filter(h => new Date(h.date) >= new Date()).slice(0, 3).map(h => (
+                            <div key={h.id} className="flex items-center gap-3">
+                                <div className="text-[10px] font-bold bg-slate-50 text-slate-500 px-2 py-1 rounded-lg border border-slate-100 min-w-[70px] text-center shrink-0">
+                                    {new Date(h.date).toLocaleDateString('es', { day: '2-digit', month: 'short' })}
+                                </div>
+                                <span className="text-xs font-semibold text-slate-600 truncate">{h.description}</span>
+                            </div>
+                        ))}
+                        {holidays.length === 0 && <p className="text-[10px] text-slate-400 italic">No hay festivos próximos</p>}
+                    </div>
+                </div>
             </div>
 
             {/* Tabla de Historial */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50">
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-slate-800">Historial de Solicitudes</h3>
-                        <span className="px-3 py-1 bg-slate-100 text-slate-600 font-bold rounded-full text-xs border border-slate-200">
-                            <i className="fa-solid fa-list-ul mr-1.5"></i>
-                            {vacations.length} peticiones
-                        </span>
-                    </div>
-
-                    <div className="relative w-full md:w-80">
-                        <i className="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden" >
+                {/* Barra de Búsqueda y Filtros */}
+                <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col md:flex-row gap-5 items-center justify-between bg-white">
+                    <div className="relative w-full md:w-96 group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i className="fa-solid fa-magnifying-glass text-slate-300 group-focus-within:text-corporate transition-colors"></i>
+                        </div>
                         <input
                             type="text"
-                            placeholder="Buscar por fecha, estado o nota..."
+                            placeholder="Buscar en el historial..."
                             value={searchTerm}
                             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                            className="w-full pl-11 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate/50 transition-all text-sm shadow-sm"
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-corporate/10 focus:border-corporate/40 transition-all text-sm font-medium"
                         />
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="px-4 py-2 bg-corporate/5 text-corporate rounded-full text-[10px] font-black uppercase tracking-widest border border-corporate/10">
+                            {filteredVacations.length} Solicitudes
+                        </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto p-6 md:p-8">
-                    <table className="w-full text-left border-separate border-spacing-y-3">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-separate border-spacing-0">
                         <thead>
-                            <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest px-4">
-                                <th className="px-4 pb-2 font-bold cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('fecha_inicio')}>
-                                    Fecha Inicio {sortKey === 'fecha_inicio' && (sortDirection === 'asc' ? '↑' : '↓')}
+                            <tr className="bg-slate-50/50">
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('fecha_inicio')}>
+                                    <div className="flex items-center gap-2">
+                                        Periodo de Descanso
+                                        {sortKey === 'fecha_inicio' && (sortDirection === 'asc' ? <i className="fa-solid fa-arrow-up-short-wide"></i> : <i className="fa-solid fa-arrow-down-short-wide"></i>)}
+                                    </div>
                                 </th>
-                                <th className="px-4 pb-2 font-bold cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('fecha_fin')}>
-                                    Fecha Fin {sortKey === 'fecha_fin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-center">Duración</th>
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('estado')}>
+                                    Estado
                                 </th>
-                                <th className="px-4 pb-2 font-bold text-center">Días</th>
-                                <th className="px-4 pb-2 font-bold cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('estado')}>
-                                    Estado {sortKey === 'estado' && (sortDirection === 'asc' ? '↑' : '↓')}
-                                </th>
-                                <th className="px-4 pb-2 font-bold text-right">Acciones</th>
+                                <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Gestión</th>
                             </tr>
                         </thead>
-                        <tbody className="text-sm">
+                        <tbody className="divide-y divide-slate-50">
                             {currentItems.length > 0 ? (
                                 currentItems.map((vacation) => (
-                                    <tr key={vacation.id} className="bg-white shadow-[0_0_15px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-300 rounded-2xl group border border-slate-50">
-                                        <td className="p-4 rounded-l-2xl border-t border-b border-l border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                            <div className="font-medium text-slate-700">
-                                                {vacation.fecha_inicio}
+                                    <tr key={vacation.id} className="group hover:bg-slate-50/50 transition-all duration-300">
+                                        <td className="p-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex flex-col items-center justify-center shadow-sm group-hover:border-corporate/30 group-hover:shadow-md transition-all">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase">{new Date(vacation.fecha_inicio).toLocaleString('es', { month: 'short' })}</span>
+                                                    <span className="text-lg font-black text-slate-800 leading-none">{new Date(vacation.fecha_inicio).getDate()}</span>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-slate-700">{new Date(vacation.fecha_inicio).toLocaleDateString()}</span>
+                                                        <i className="fa-solid fa-arrow-right text-[10px] text-slate-300"></i>
+                                                        <span className="font-bold text-slate-700">{new Date(vacation.fecha_fin).toLocaleDateString()}</span>
+                                                    </div>
+                                                    {vacation.nota && (
+                                                        <p className="text-xs text-slate-400 font-medium italic truncate max-w-[200px]">{vacation.nota}</p>
+                                                    )}
+                                                </div>
                                             </div>
-                                            {vacation.nota && (
-                                                <div className="text-xs text-slate-500 italic mt-1 font-medium bg-slate-100 p-2 rounded-lg break-words max-w-xs">
-                                                    <i className="fa-solid fa-quote-left mr-1 opacity-50"></i>
-                                                    {vacation.nota}
-                                                </div>
-                                            )}
                                         </td>
-                                        <td className="p-4 border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors font-medium text-slate-700">
-                                            {vacation.fecha_fin}
+                                        <td className="p-6 text-center">
+                                            <div className="inline-flex flex-col items-center">
+                                                <span className="text-lg font-black text-slate-800">{vacation.dias_solicitados}</span>
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Días Lab.</span>
+                                            </div>
                                         </td>
-                                        <td className="p-4 text-center border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                            <span className="font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">
-                                                {vacation.dias_solicitados}
-                                            </span>
+                                        <td className="p-6">
+                                            <div className="flex flex-col gap-1.5">
+                                                {renderStatus(vacation.estado || 'pending')}
+                                                {vacation.mensaje_admin && (
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 pl-1">
+                                                        <i className="fa-solid fa-comment-dots text-corporate/40"></i>
+                                                        <span className="italic truncate max-w-[150px]">{vacation.mensaje_admin}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
-                                        <td className="p-4 border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                            <div className="mb-1">{renderStatus(vacation.estado || 'pending')}</div>
-                                            {vacation.mensaje_admin && (
-                                                <div className={"text-xs italic font-medium p-2 rounded-lg break-words mt-1 max-w-xs inline-block " + (vacation.estado === 'approved' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
-                                                    <i className="fa-solid fa-reply mr-1 opacity-50"></i>
-                                                    {vacation.mensaje_admin}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="p-4 text-right rounded-r-2xl border-t border-b border-r border-slate-100 group-hover:border-corporate/20 transition-colors">
+                                        <td className="p-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                {/* Botón Cancelar: Si está pendiente o aprobada */}
                                                 {(vacation.estado === 'pending' || vacation.estado === 'approved') && (
                                                     <button
                                                         onClick={() => handleCancelVacation(vacation.id)}
-                                                        className="text-amber-500 hover:text-amber-600 bg-amber-50 hover:bg-amber-100 font-bold px-3 py-2 rounded-xl transition-all shadow-sm text-xs flex items-center gap-1"
-                                                        title="Cancelar solicitud"
+                                                        className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm border border-amber-100 hover:scale-110"
+                                                        title="Cancelar Solicitud"
                                                     >
-                                                        <i className="fa-solid fa-ban"></i>
-                                                        <span className="hidden lg:inline">Cancelar</span>
+                                                        <i className="fa-solid fa-ban text-sm"></i>
                                                     </button>
                                                 )}
-
-                                                {/* Botón Borrar/Papelera: Si está cancelada, rechazada o es pasada */}
                                                 {(vacation.estado === 'canceled' || vacation.estado === 'rejected' || new Date(vacation.fecha_fin) < new Date()) && (
                                                     <button
                                                         onClick={() => handleHideVacation(vacation.id)}
-                                                        className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 font-bold w-9 h-9 flex items-center justify-center rounded-xl transition-all shadow-sm"
-                                                        title="Eliminar del historial"
+                                                        className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-500 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm border border-slate-100 hover:scale-110"
+                                                        title="Eliminar de mi vista"
                                                     >
-                                                        <i className="fa-solid fa-trash-can"></i>
+                                                        <i className="fa-solid fa-trash-can text-sm"></i>
                                                     </button>
-                                                )}
-
-                                                {/* Fallback si no hay acciones */}
-                                                {!(vacation.estado === 'pending' || vacation.estado === 'approved' || vacation.estado === 'canceled' || vacation.estado === 'rejected' || new Date(vacation.fecha_fin) < new Date()) && (
-                                                    <span className="text-slate-300 text-xs font-medium italic select-none">Sin acciones</span>
                                                 )}
                                             </div>
                                         </td>
@@ -348,12 +369,12 @@ const Vacations = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="p-12 text-center border-t border-b border-l border-r border-slate-100 rounded-2xl border-dashed">
-                                        <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                                            <i className="fa-regular fa-folder-open"></i>
+                                    <td colSpan="4" className="p-20 text-center">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-200 border-2 border-dashed border-slate-100">
+                                            <i className="fa-solid fa-calendar-xmark text-3xl"></i>
                                         </div>
-                                        <p className="text-slate-500 font-bold">No hay solicitudes registradas.</p>
-                                        <p className="text-slate-400 text-sm mt-1">Cuando pidas vacaciones aparecerán aquí.</p>
+                                        <h5 className="text-slate-400 font-black text-lg">Historial Vacío</h5>
+                                        <p className="text-slate-300 text-sm mt-1 max-w-xs mx-auto">No tienes solicitudes que coincidan con los criterios de búsqueda.</p>
                                     </td>
                                 </tr>
                             )}
@@ -361,93 +382,208 @@ const Vacations = () => {
                     </table>
                 </div>
 
-                {/* Controles de Paginación */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between p-6 bg-slate-50/50 border-t border-slate-100">
-                        <span className="text-sm text-slate-500 font-medium">
-                            Mostrando <span className="font-bold text-corporate">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedVacations.length)}</span> de <span className="font-bold text-slate-800">{sortedVacations.length}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => changePage(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className={'px-3 py-1.5 rounded-lg text-sm font-bold border ' + (currentPage === 1 ? 'border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed' : 'border-slate-200 text-slate-600 bg-white hover:bg-corporate/5 hover:text-corporate transition-all')}
-                            >
-                                Anterior
-                            </button>
-                            <div className="flex gap-1">
-                                {[...Array(totalPages)].map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => changePage(i + 1)}
-                                        className={'w-8 h-8 rounded-lg text-sm font-bold transition-all ' + (currentPage === i + 1 ? 'bg-corporate text-white shadow-md' : 'text-slate-500 hover:bg-slate-100')}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
+                {/* Controles de Paginación Rediseñados */}
+                {
+                    totalPages > 1 && (
+                        <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Mostrando <span className="text-corporate">{indexOfFirstItem + 1}</span> a <span className="text-corporate">{Math.min(indexOfLastItem, sortedVacations.length)}</span> de {sortedVacations.length}
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => changePage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:border-corporate hover:text-corporate disabled:opacity-30 transition-all font-black shadow-sm"
+                                >
+                                    <i className="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <div className="flex gap-1">
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => changePage(i + 1)}
+                                            className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${currentPage === i + 1 ? 'bg-corporate text-white shadow-lg shadow-corporate/20 scale-110' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => changePage(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:border-corporate hover:text-corporate disabled:opacity-30 transition-all font-black shadow-sm"
+                                >
+                                    <i className="fa-solid fa-chevron-right"></i>
+                                </button>
                             </div>
-                            <button
-                                onClick={() => changePage(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className={'px-3 py-1.5 rounded-lg text-sm font-bold border ' + (currentPage === totalPages ? 'border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed' : 'border-slate-200 text-slate-600 bg-white hover:bg-corporate/5 hover:text-corporate transition-all')}
-                            >
-                                Siguiente
-                            </button>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )
+                }
+            </div >
 
-            {/* Modal para solicitar vacaciones */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <h3 className="text-xl font-bold text-slate-800">Solicitar Vacaciones</h3>
-                            <button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
-                                <i className="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                        <div className="p-6">
-                            {formError && (
-                                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
-                                    <i className="fa-solid fa-circle-exclamation mr-2"></i>
-                                    {formError}
+            {/* Modal para solicitar vacaciones (Rediseño Rango Claro) */}
+            {
+                isAddModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 flex flex-col transition-all duration-500">
+                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white relative">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-corporate opacity-[0.03] rounded-full translate-x-8 -translate-y-8"></div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Solicitar Vacaciones</h3>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Define tu periodo de descanso</p>
                                 </div>
-                            )}
-                            <form onSubmit={handleRequestVacation} className="space-y-5">
-                                <div className="grid grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha Inicio</label>
-                                        <input type="date" required value={newVacation.start_date} onChange={e => setNewVacation({ ...newVacation, start_date: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                <button onClick={() => setIsAddModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all group">
+                                    <i className="fa-solid fa-xmark transition-transform group-hover:rotate-90"></i>
+                                </button>
+                            </div>
+                            <div className="p-8">
+                                {formError && (
+                                    <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-2xl text-xs font-black uppercase tracking-wider animate-bounce">
+                                        <i className="fa-solid fa-triangle-exclamation mr-2"></i>
+                                        {formError}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha Fin</label>
-                                        <input type="date" required value={newVacation.end_date} onChange={e => setNewVacation({ ...newVacation, end_date: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Motivo o Notas (Opcional)</label>
-                                    <textarea value={newVacation.note} onChange={e => setNewVacation({ ...newVacation, note: e.target.value })} rows="3" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all resize-none" placeholder="Añade algún comentario para RRHH..."></textarea>
-                                </div>
-                                <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-                                        Cancelar
-                                    </button>
-                                    <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl font-bold bg-corporate hover:bg-corporate-dark text-white transition-colors shadow-md flex items-center gap-2 disabled:opacity-70">
-                                        {isSubmitting ? (
-                                            <><i className="fa-solid fa-spinner fa-spin"></i> Solicitando...</>
-                                        ) : (
-                                            <><i className="fa-solid fa-paper-plane"></i> Enviar Solicitud</>
+                                )}
+                                <form onSubmit={handleRequestVacation} className="space-y-8">
+                                    <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-corporate/10 text-corporate flex items-center justify-center text-lg">
+                                                <i className="fa-solid fa-calendar-range"></i>
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Rango de Fechas Continuo</h4>
+                                                <p className="text-[10px] text-slate-400 font-bold italic mt-0.5">* Sábados, Domingos y Festivos NO restan saldo.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+                                            <div className="relative">
+                                                <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Desde el día...</label>
+                                                <div className="relative group">
+                                                    <i className="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-corporate/30 group-focus-within:text-corporate transition-colors"></i>
+                                                    <input
+                                                        type="date" required
+                                                        value={newVacation.start_date}
+                                                        onChange={e => setNewVacation({ ...newVacation, start_date: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Hasta el día...</label>
+                                                <div className="relative group">
+                                                    <i className="fa-solid fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-corporate/30 group-focus-within:text-corporate transition-colors"></i>
+                                                    <input
+                                                        type="date" required
+                                                        value={newVacation.end_date}
+                                                        onChange={e => setNewVacation({ ...newVacation, end_date: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="hidden md:block absolute left-1/2 top-11 -translate-x-1/2 text-slate-200">
+                                                <i className="fa-solid fa-arrow-right-long text-xl"></i>
+                                            </div>
+                                        </div>
+
+                                        {newVacation.start_date && newVacation.end_date && (
+                                            <div className="mt-8 space-y-4">
+                                                <div className="flex items-center justify-between p-4 bg-corporate/5 rounded-2xl border border-corporate/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-corporate shadow-sm">
+                                                            <i className="fa-solid fa-calculator"></i>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Laborables</span>
+                                                            <span className="text-xl font-black text-corporate">
+                                                                {(() => {
+                                                                    let start = new Date(newVacation.start_date);
+                                                                    let end = new Date(newVacation.end_date);
+                                                                    let count = 0;
+                                                                    let cur = new Date(start);
+                                                                    while (cur <= end) {
+                                                                        const day = cur.getDay();
+                                                                        const isWeekend = day === 0 || day === 6;
+                                                                        const isHoliday = holidays.some(h => new Date(h.date).toDateString() === cur.toDateString());
+                                                                        if (!isWeekend && !isHoliday) count++;
+                                                                        cur.setDate(cur.getDate() + 1);
+                                                                    }
+                                                                    return count;
+                                                                })()} días
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white rounded-2xl border border-slate-100 p-4 max-h-40 overflow-y-auto custom-scrollbar">
+                                                    <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                        <i className="fa-solid fa-list-check"></i>
+                                                        Desglose del periodo
+                                                    </h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {(() => {
+                                                            let start = new Date(newVacation.start_date);
+                                                            let end = new Date(newVacation.end_date);
+                                                            let days = [];
+                                                            let cur = new Date(start);
+                                                            while (cur <= end) {
+                                                                const day = cur.getDay();
+                                                                const isWeekend = day === 0 || day === 6;
+                                                                const isHoliday = holidays.find(h => new Date(h.date).toDateString() === cur.toDateString());
+                                                                days.push({
+                                                                    date: new Date(cur),
+                                                                    isWorking: !isWeekend && !isHoliday,
+                                                                    type: isWeekend ? 'weekend' : (isHoliday ? 'holiday' : 'working'),
+                                                                    label: isHoliday ? isHoliday.description : (isWeekend ? 'Finde' : '')
+                                                                });
+                                                                cur.setDate(cur.getDate() + 1);
+                                                            }
+                                                            return days.map((d, i) => (
+                                                                <div key={i} className={`px-3 py-1.5 rounded-xl text-[9px] font-black border flex flex-col items-center min-w-[50px] ${d.isWorking ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300 opacity-60'}`}>
+                                                                    <span>{d.date.getDate()} {monthNames[d.date.getMonth()].substring(0, 3)}</span>
+                                                                    {d.label && <span className="text-[7px] truncate max-w-[40px] mt-0.5">{d.label}</span>}
+                                                                </div>
+                                                            ));
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
-                                    </button>
-                                </div>
-                            </form>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Motivo o comentario adicional</label>
+                                        <textarea
+                                            value={newVacation.note}
+                                            onChange={e => setNewVacation({ ...newVacation, note: e.target.value })}
+                                            rows="3"
+                                            className="w-full px-5 py-4 bg-white rounded-[2rem] border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all resize-none font-medium text-slate-700 placeholder:text-slate-200"
+                                            placeholder="Detalla si es necesario algún motivo especial..."
+                                        ></textarea>
+                                    </div>
+
+                                    <div className="pt-2 flex justify-end gap-3">
+                                        <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-100 transition-all">
+                                            Descartar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="px-8 py-4 bg-gradient-to-r from-corporate to-indigo-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-corporate/20 hover:shadow-corporate/40 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 flex items-center gap-3"
+                                        >
+                                            {isSubmitting ? (
+                                                <><i className="fa-solid fa-circle-notch fa-spin"></i> Enviando...</>
+                                            ) : (
+                                                <><i className="fa-solid fa-paper-plane text-xs"></i> Lanzar Solicitud</>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

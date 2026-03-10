@@ -15,7 +15,7 @@ class StoreDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => 'required|file|mimes:pdf|max:5120',
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'type' => 'required|in:payroll,contract,certificate,other',
             'title' => 'required|string|max:255',
             'period_year' => 'nullable|integer|min:2000|max:' . (date('Y') + 1),

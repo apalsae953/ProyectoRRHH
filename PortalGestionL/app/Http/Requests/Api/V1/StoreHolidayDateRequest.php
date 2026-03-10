@@ -15,7 +15,8 @@ class StoreHolidayDateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => 'required|date|unique:holiday_dates,date', // No duplicar el mismo festivo
+            'date' => 'required|date', 
+            'date_end' => 'nullable|date|after_or_equal:date',
             'scope' => 'required|in:national,center,custom',
             'center_id' => 'nullable|integer',
             'description' => 'nullable|string|max:255',

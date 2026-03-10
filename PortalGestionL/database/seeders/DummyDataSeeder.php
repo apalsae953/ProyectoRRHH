@@ -47,7 +47,7 @@ class DummyDataSeeder extends Seeder
                 'user_id' => $user->id,
                 'year' => date('Y'),
                 'accrued_days' => 22,
-                'taken_days' => rand(0, 15), // Entre 0 y 15 días ya gastados
+                'taken_days' => 0, // Reestablecer a 0 para que no salgan por la cara
                 'carried_over_days' => rand(0, 3), // Algunos días arrastrados del año anterior
             ]);
         });

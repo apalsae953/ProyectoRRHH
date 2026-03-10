@@ -28,7 +28,16 @@ const AdminLayout = () => {
                     </Link>
                     <Link to="/vacaciones" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/vacaciones' ? 'bg-corporate/10 text-white shadow-inner border border-corporate/20' : 'hover:bg-white/5 hover:text-white')}>
                         <i className={'fa-solid fa-plane transition-transform duration-300 text-lg ' + (location.pathname === '/vacaciones' ? 'text-corporate scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
-                        Vacaciones
+                        Mis Vacaciones
+                    </Link>
+                    <Link to="/calendario" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/calendario' ? 'bg-corporate/10 text-white shadow-inner border border-corporate/20' : 'hover:bg-white/5 hover:text-white')}>
+                        <i className={'fa-solid fa-calendar-days transition-transform duration-300 text-lg ' + (location.pathname === '/calendario' ? 'text-corporate scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
+                        Calendario
+                    </Link>
+
+                    <Link to="/documentos" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/documentos' ? 'bg-corporate/10 text-white shadow-inner border border-corporate/20' : 'hover:bg-white/5 hover:text-white')}>
+                        <i className={'fa-solid fa-file-invoice transition-transform duration-300 text-lg ' + (location.pathname === '/documentos' ? 'text-corporate scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
+                        Nóminas y Docs
                     </Link>
                     {isAdmin && (
                         <>
