@@ -2,15 +2,20 @@ import { useState, useEffect } from 'react';
 import vacationService from '../services/vacationService';
 
 const Vacations = () => {
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
     const [vacations, setVacations] = useState([]);
     const [balance, setBalance] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isOvertimeModalOpen, setIsOvertimeModalOpen] = useState(false);
     const [newVacation, setNewVacation] = useState({ start_date: '', end_date: '', note: '' });
+    const [newOvertime, setNewOvertime] = useState({ date: '', hours: '', note: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
+    const [globalSettings, setGlobalSettings] = useState(null);
 
     // Paginación y Ordenamiento
     const [currentPage, setCurrentPage] = useState(1);
@@ -22,11 +27,13 @@ const Vacations = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [vacationsRes, balanceRes, holidayRes] = await Promise.all([
+            const [vacationsRes, balanceRes, holidayRes, settingsRes] = await Promise.all([
                 vacationService.getMyVacations(),
                 vacationService.getMyBalance().catch(() => null),
-                import('../api/axios').then(m => m.default.get('/api/v1/holidays'))
+                import('../api/axios').then(m => m.default.get('/api/v1/holidays')),
+                import('../api/axios').then(m => m.default.get('/api/v1/settings'))
             ]);
+            setGlobalSettings(settingsRes.data);
 
             setVacations(vacationsRes.data?.data || vacationsRes.data || []);
             setHolidays(holidayRes.data?.data || []);
@@ -34,7 +41,7 @@ const Vacations = () => {
                 dias_generados_hasta_hoy: 0,
                 dias_disfrutados: 0,
                 dias_totales_disponibles: 0,
-                dias_base_anuales: 22
+                dias_base_anuales: parseInt(settingsRes.data?.vacation_days_per_year) || 22
             };
             setBalance(balanceData);
         } catch (error) {
@@ -50,7 +57,7 @@ const Vacations = () => {
         if (sortKey === key && sortDirection === 'asc') direction = 'desc';
         setSortKey(key);
         setSortDirection(direction);
-        setCurrentPage(1); // Reset to first page on sort change
+        setCurrentPage(1); //Redsetear a la priemera pagina
     };
 
     const filteredVacations = vacations.filter(v => {
@@ -68,7 +75,7 @@ const Vacations = () => {
         const aValue = a[sortKey];
         const bValue = b[sortKey];
 
-        // Handle date sorting
+        // Ordenar por fechas
         if (sortKey.includes('fecha')) {
             const dateA = new Date(aValue);
             const dateB = new Date(bValue);
@@ -77,7 +84,7 @@ const Vacations = () => {
             return 0;
         }
 
-        // Handle string/number sorting
+        // Ordenar por estado
         if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
         return 0;
@@ -113,10 +120,31 @@ const Vacations = () => {
         }
     };
 
+    const handleRequestOvertime = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setFormError('');
+        try {
+            await vacationService.requestVacation({
+                start_date: newOvertime.date,
+                end_date: newOvertime.date,
+                note: `Compensación: ${newOvertime.hours} horas. ${newOvertime.note}`,
+                type: 'overtime'
+            });
+            setIsOvertimeModalOpen(false);
+            setNewOvertime({ date: '', hours: '', note: '' });
+            await fetchData();
+        } catch (error) {
+            setFormError(error.response?.data?.message || 'Error al solicitar horas extra');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleCancelVacation = async (id) => {
         const reason = window.prompt('Por favor, indica el motivo de la cancelación:');
-        if (!reason || reason.length < 5) {
-            alert('Debes indicar un motivo de al menos 5 caracteres.');
+        if (!reason) {
+            alert('Debes indicar un motivo');
             return;
         }
 
@@ -183,10 +211,18 @@ const Vacations = () => {
                         <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Mis Vacaciones</h2>
                         <p className="text-slate-500 text-sm mt-1 font-medium">Gestiona tus días libres interrumpiendo tu jornada.</p>
                     </div>
-                    <button onClick={() => setIsAddModalOpen(true)} className="bg-corporate hover:bg-corporate-dark text-white font-bold py-2.5 px-5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 group">
-                        <i className="fa-solid fa-plus transition-transform group-hover:rotate-90"></i>
-                        <span>Nueva Solicitud</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {globalSettings?.allow_overtime_request === 'true' && (
+                            <button onClick={() => setIsOvertimeModalOpen(true)} className="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold py-2.5 px-5 rounded-xl transition-all shadow-sm flex items-center gap-2 group border border-amber-200">
+                                <i className="fa-solid fa-clock transition-transform group-hover:scale-110"></i>
+                                <span>Horas Extra</span>
+                            </button>
+                        )}
+                        <button onClick={() => setIsAddModalOpen(true)} className="bg-corporate hover:bg-corporate-dark text-white font-bold py-2.5 px-5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 group">
+                            <i className="fa-solid fa-plus transition-transform group-hover:rotate-90"></i>
+                            <span>Nueva Solicitud</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -202,7 +238,7 @@ const Vacations = () => {
                     </h4>
                     <p className="text-slate-500 text-sm leading-relaxed">
                         Tus vacaciones se generan día a día. Los <strong>Días Generados</strong> muestran lo que has devengado proporcionalmente hasta hoy (aprox. 1.83 días por mes).
-                        Puedes solicitar días que aún no has generado, pero RRHH tendrá en cuenta tu saldo anual base (22 días) para la aprobación.
+                        Puedes solicitar días que aún no has generado, pero RRHH tendrá en cuenta tu saldo anual base ({balance?.dias_base_anuales || 22} días) para la aprobación.
                     </p>
                 </div>
             </div>
@@ -575,6 +611,78 @@ const Vacations = () => {
                                             ) : (
                                                 <><i className="fa-solid fa-paper-plane text-xs"></i> Lanzar Solicitud</>
                                             )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Modal para solicitar Horas Extra */}
+            {
+                isOvertimeModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 flex flex-col transition-all duration-500">
+                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-amber-50 to-white relative">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400 opacity-[0.03] rounded-full translate-x-8 -translate-y-8"></div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Compensar Horas Extra</h3>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Solicita tus horas trabajadas de más</p>
+                                </div>
+                                <button onClick={() => setIsOvertimeModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-amber-100 text-amber-500 hover:bg-red-50 hover:text-red-500 transition-all group">
+                                    <i className="fa-solid fa-xmark transition-transform group-hover:rotate-90"></i>
+                                </button>
+                            </div>
+                            <div className="p-8">
+                                {formError && (
+                                    <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-2xl text-xs font-black uppercase tracking-wider">
+                                        {formError}
+                                    </div>
+                                )}
+                                <form onSubmit={handleRequestOvertime} className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Fecha del trabajo</label>
+                                            <input
+                                                type="date" required
+                                                value={newOvertime.date}
+                                                onChange={e => setNewOvertime({ ...newOvertime, date: e.target.value })}
+                                                className="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/5 outline-none transition-all font-bold text-slate-700"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Horas realizadas</label>
+                                            <input
+                                                type="number" step="0.5" required
+                                                value={newOvertime.hours}
+                                                onChange={e => setNewOvertime({ ...newOvertime, hours: e.target.value })}
+                                                className="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/5 outline-none transition-all font-bold text-slate-700"
+                                                placeholder="Ej: 4.5"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Descripción de la tarea</label>
+                                        <textarea
+                                            value={newOvertime.note}
+                                            onChange={e => setNewOvertime({ ...newOvertime, note: e.target.value })}
+                                            rows="3"
+                                            className="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/5 outline-none transition-all resize-none font-medium text-slate-700"
+                                            placeholder="Indica qué tarea se realizó..."
+                                        ></textarea>
+                                    </div>
+                                    <div className="pt-2 flex justify-end gap-3">
+                                        <button type="button" onClick={() => setIsOvertimeModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-100 transition-all">
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="px-8 py-3 bg-amber-400 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-amber-400/20 hover:shadow-amber-400/40 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70"
+                                        >
+                                            Solicitar
                                         </button>
                                     </div>
                                 </form>

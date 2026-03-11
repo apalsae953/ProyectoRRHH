@@ -3,10 +3,10 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 
 const AdminLayout = () => {
     const { user, logout } = useAuth();
-    const isAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
+    const isAdmin = user?.roles?.some(r => r && (r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director'));
     const location = useLocation(); // Para saber en qué página estamos y pintar el botón activo
-    const displayRole = user?.roles?.some(r => r === 'admin' || r.name === 'admin') ? 'Administrador' :
-        user?.roles?.some(r => r === 'hr_director' || r.name === 'hr_director') ? 'RRHH' : 'Empleado';
+    const displayRole = user?.roles?.some(r => r && (r === 'admin' || r.name === 'admin')) ? 'Administrador' :
+        user?.roles?.some(r => r && (r === 'hr_director' || r.name === 'hr_director')) ? 'RRHH' : 'Empleado';
 
     return (
         <div className="flex h-screen bg-slate-50 font-sans selection:bg-corporate/20 selection:text-corporate-dark">
@@ -50,6 +50,11 @@ const AdminLayout = () => {
                                 <i className={'fa-solid fa-sitemap transition-transform duration-300 text-lg ' + (location.pathname === '/organizacion' ? 'text-purple-700 scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
                                 Organización
                             </Link>
+
+                            <Link to="/reportes" className={'flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 group ' + (location.pathname === '/reportes' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'hover:bg-white/5 hover:text-white')}>
+                                <i className={'fa-solid fa-chart-line transition-transform duration-300 text-lg ' + (location.pathname === '/reportes' ? 'text-emerald-700 scale-110' : 'text-slate-500 group-hover:text-slate-300')}></i>
+                                Reportes
+                            </Link>
                         </>
                     )}
                 </nav>
@@ -77,12 +82,16 @@ const AdminLayout = () => {
 
                     <Link to="/perfil" className="flex items-center gap-5 cursor-pointer group">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-slate-800 group-hover:text-corporate transition-colors">{user.name} {user.surname}</p>
+                            <p className="text-sm font-bold text-slate-800 group-hover:text-corporate transition-colors">{user?.name} {user?.surname}</p>
                             <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">{displayRole}</p>
                         </div>
                         <div className="relative">
                             <div className="w-11 h-11 bg-corporate text-white rounded-full flex items-center justify-center font-bold shadow-md ring-4 ring-white transition-transform group-hover:scale-105 overflow-hidden">
-                                {user.photo ? <img src={user.photo} alt="Profile" className="w-full h-full object-cover" /> : <>{user.name.charAt(0)}{user.surname.charAt(0)}</>}
+                                {user?.photo ? (
+                                    <img src={user?.photo} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <>{(user?.name || '?').charAt(0)}{(user?.surname || '?').charAt(0)}</>
+                                )}
                             </div>
                             <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
                         </div>

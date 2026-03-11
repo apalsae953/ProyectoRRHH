@@ -16,10 +16,12 @@ class Vacation extends Model
         'user_id',
         'start_date',
         'end_date',
+        'type',
         'days',
         'status',
         'approver_id',
         'note',
+        'cancel_reason',
         'admin_message',
     ];
 

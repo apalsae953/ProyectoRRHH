@@ -12,6 +12,14 @@ const AdminSettings = () => {
     const [newPositionName, setNewPositionName] = useState('');
     const [newHoliday, setNewHoliday] = useState({ date: '', date_end: '', description: '', scope: 'national' });
 
+    // Políticas Globales
+    const [settings, setSettings] = useState({
+        vacation_days_per_year: '22',
+        probation_months_default: '6',
+        allow_overtime_request: 'true',
+        max_vacation_carryover: '5'
+    });
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -23,14 +31,19 @@ const AdminSettings = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [deptRes, posRes, holidayRes] = await Promise.all([
+            const [deptRes, posRes, holidayRes, settingRes] = await Promise.all([
                 axios.get('/api/v1/departments'),
                 axios.get('/api/v1/positions'),
-                axios.get('/api/v1/holidays')
+                axios.get('/api/v1/holidays'),
+                axios.get('/api/v1/settings')
             ]);
             setDepartments(deptRes.data);
             setPositions(posRes.data);
             setHolidays(holidayRes.data?.data || []);
+            
+            if (settingRes.data && Object.keys(settingRes.data).length > 0) {
+                setSettings(prev => ({ ...prev, ...settingRes.data }));
+            }
         } catch (err) {
             console.error("Error cargando config", err);
             setError('Error al cargar la configuración.');
@@ -111,6 +124,17 @@ const AdminSettings = () => {
             fetchData();
         } catch (err) {
             setError('Error al eliminar festivo.');
+        }
+    };
+
+    const handleSaveSettings = async (e) => {
+        e.preventDefault();
+        setError(''); setSuccess('');
+        try {
+            await axios.post('/api/v1/settings', { settings });
+            setSuccess('Políticas globales actualizadas correctamente.');
+        } catch (err) {
+            setError('Error al guardar las políticas.');
         }
     };
 
@@ -269,6 +293,94 @@ const AdminSettings = () => {
                     </div>
                 </div>
 
+                {/* SECCIÓN POLÍTICAS GLOBALES */}
+                <div className="mt-16 pt-12 border-t border-slate-100">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                                <div className="w-10 h-10 bg-corporate/10 text-corporate rounded-2xl flex items-center justify-center">
+                                    <i className="fa-solid fa-sliders"></i>
+                                </div>
+                                Políticas Globales (Parámetros)
+                            </h3>
+                            <p className="text-slate-500 text-sm mt-1 font-medium">Configura las reglas maestras que rigen el comportamiento de la plataforma.</p>
+                        </div>
+                        <button 
+                            onClick={handleSaveSettings}
+                            className="px-8 py-3 bg-corporate text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-corporate-dark transition-all shadow-lg shadow-corporate/20 active:scale-95"
+                        >
+                            <i className="fa-solid fa-cloud-arrow-up mr-2"></i> Guardar Políticas
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Política 1: Días de vacaciones */}
+                        <div className="bg-slate-50 border border-slate-200 p-6 rounded-3xl hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
+                            <i className="fa-solid fa-plane text-corporate/30 text-3xl mb-4 group-hover:text-corporate transition-colors"></i>
+                            <h4 className="font-bold text-slate-800 mb-1">Días de Vacaciones / Año</h4>
+                            <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">Cantidad estándar de días naturales que se asignan a cada empleado anualmente.</p>
+                            <div className="relative">
+                                <input 
+                                    type="number"
+                                    value={settings.vacation_days_per_year}
+                                    onChange={(e) => setSettings({...settings, vacation_days_per_year: e.target.value})}
+                                    className="w-full pl-4 pr-12 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-700 outline-none focus:ring-4 focus:ring-corporate/5 focus:border-corporate transition-all"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase">Días</span>
+                            </div>
+                        </div>
+
+                        {/* Política 2: Periodo de prueba */}
+                        <div className="bg-slate-50 border border-slate-200 p-6 rounded-3xl hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
+                            <i className="fa-solid fa-hourglass-start text-corporate/30 text-3xl mb-4 group-hover:text-corporate transition-colors"></i>
+                            <h4 className="font-bold text-slate-800 mb-1">Periodo Prueba (Efecto)</h4>
+                            <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">Meses sugeridos por defecto para nuevos contratos antes de pasar a indefinido.</p>
+                            <div className="relative">
+                                <input 
+                                    type="number"
+                                    value={settings.probation_months_default}
+                                    onChange={(e) => setSettings({...settings, probation_months_default: e.target.value})}
+                                    className="w-full pl-4 pr-12 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-700 outline-none focus:ring-4 focus:ring-corporate/5 focus:border-corporate transition-all"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase">Meses</span>
+                            </div>
+                        </div>
+
+                        {/* Política 3: Arrastre de vacaciones */}
+                        <div className="bg-slate-50 border border-slate-200 p-6 rounded-3xl hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
+                            <i className="fa-solid fa-forward-step text-corporate/30 text-3xl mb-4 group-hover:text-corporate transition-colors"></i>
+                            <h4 className="font-bold text-slate-800 mb-1">Días Arrastrables (Máx)</h4>
+                            <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">Días máximos que un empleado puede pasar de un año al siguiente.</p>
+                            <div className="relative">
+                                <input 
+                                    type="number"
+                                    value={settings.max_vacation_carryover}
+                                    onChange={(e) => setSettings({...settings, max_vacation_carryover: e.target.value})}
+                                    className="w-full pl-4 pr-12 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-700 outline-none focus:ring-4 focus:ring-corporate/5 focus:border-corporate transition-all"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase">Días</span>
+                            </div>
+                        </div>
+
+                        {/* Política 4: Horas extra (Toggle) */}
+                        <div className="bg-slate-50 border border-slate-200 p-6 rounded-3xl hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all group flex flex-col justify-between">
+                            <div>
+                                <i className="fa-solid fa-clock text-corporate/30 text-3xl mb-4 group-hover:text-corporate transition-colors"></i>
+                                <h4 className="font-bold text-slate-800 mb-1">Permitir Horas Extra</h4>
+                                <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">Habilita o deshabilita la opción de que los empleados soliciten compensación de horas.</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setSettings({...settings, allow_overtime_request: settings.allow_overtime_request === 'true' ? 'false' : 'true'})}
+                                    className={`relative w-14 h-8 rounded-full transition-all flex items-center px-1 ${settings.allow_overtime_request === 'true' ? 'bg-corporate' : 'bg-slate-300'}`}
+                                >
+                                    <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-all transform ${settings.allow_overtime_request === 'true' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                                </button>
+                                <span className="font-bold text-sm text-slate-700">{settings.allow_overtime_request === 'true' ? 'Activado' : 'Desactivado'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

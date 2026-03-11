@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\HolidayDateController;
 use App\Http\Controllers\Api\V1\VacationBalanceController;
 use App\Http\Controllers\Api\V1\VacationController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\LogController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Resources\V1\EmployeeResource;
@@ -27,11 +29,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         
         Route::get('/auth/me', function (Request $request) {
-            return response()->json($request->user()->load('roles'));
+            return response()->json($request->user()->load('roles', 'department', 'position'));
         });
 
         Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
         Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
+        
+        // 2FA Routes
+        Route::post('/auth/2fa/enable', [AuthController::class, 'generate2FA']);
+        Route::post('/auth/2fa/confirm', [AuthController::class, 'confirm2FA']);
+        Route::post('/auth/2fa/disable', [AuthController::class, 'disable2FA']);
 
         // --- EMPLEADOS ---
         
@@ -44,6 +51,7 @@ Route::prefix('v1')->group(function () {
         // CRUD completo de empleados (index, store, show, update, destroy)
         // Esto genera automáticamente las rutas GET, POST, PUT/PATCH y DELETE para /employees
         Route::apiResource('employees', EmployeeController::class);
+        Route::post('/employees/{employee}/reset-2fa', [EmployeeController::class, 'resetTwoFactor']);
         
         // --- DEPARTAMENTOS Y PUESTOS ---
         Route::apiResource('departments', DepartmentController::class);
@@ -58,8 +66,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/employees/{employee}/documents-list', [DocumentController::class, 'employeeDocuments']);
         Route::post('/employees/{employee}/documents', [DocumentController::class, 'store']);
         
-        // Descargar un documento (validando permisos)
-        Route::get('/documents/{document}/download', [DocumentController::class, 'download']);
+        // Descargar un documento (validando permisos mediante URL temporal firmada)
+        Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     
         // RRHH o Admin gestionan documentos de un empleado específico
         Route::patch('/documents/{document}', [DocumentController::class, 'update']);
@@ -74,6 +82,7 @@ Route::prefix('v1')->group(function () {
 
         // Acciones de RRHH / Admin
         Route::get('/vacations', [VacationController::class, 'index']);
+        Route::get('/vacations/calendar', [VacationController::class, 'calendar']);
         Route::post('/vacations/{vacation}/approve', [VacationController::class, 'approve']); 
         Route::post('/vacations/{vacation}/reject', [VacationController::class, 'reject']);
 
@@ -84,5 +93,13 @@ Route::prefix('v1')->group(function () {
         // --- CALENDARIO LABORAL (Festivos) ---
         // Usamos solo los métodos index, store y destroy
         Route::apiResource('holidays', HolidayDateController::class)->only(['index', 'store', 'destroy']);
+
+        // --- CONFIGURACIÓN GLOBAL ---
+        Route::get('/settings', [\App\Http\Controllers\Api\V1\SettingController::class, 'index']);
+        Route::patch('/settings', [\App\Http\Controllers\Api\V1\SettingController::class, 'update']);
+        
+        // --- REPORTES Y AUDITORÍA ---
+        Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
+        Route::get('/logs', [LogController::class, 'index']);
     });
 });

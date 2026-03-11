@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Holidays = () => {
     const { user } = useAuth();
-    const isHrOrAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
+    const isHrOrAdmin = user?.roles?.some(r => r && (r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director'));
 
     const [holidays, setHolidays] = useState([]);
     const [loading, setLoading] = useState(true);

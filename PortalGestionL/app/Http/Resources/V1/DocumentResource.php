@@ -19,7 +19,11 @@ class DocumentResource extends JsonResource
             'period_month' => $this->period_month,
             'visibility' => $this->visibility,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'url_descarga' => url("/api/v1/documents/{$this->id}/download"), 
+            'url_descarga' => \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                'documents.download', 
+                now()->addMinutes(60), 
+                ['document' => $this->id]
+            ), 
             // Mantener compatibilidad si se usaba en otros sitios
             'titulo' => $this->title,
             'tipo' => $this->type,

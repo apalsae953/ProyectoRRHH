@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Hash;
 use App\Mail\PasswordResetMail;
 use Illuminate\Support\Str;
 use App\Models\User;
+use PragmaRX\Google2FA\Google2FA;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 
 class AuthController extends Controller
 {
@@ -16,7 +21,7 @@ class AuthController extends Controller
     {
         //Validamos que nos envíen el DNI
         $request->validate([
-            'dni' => 'required|string',
+            'dni' => ['required', 'string', new \App\Rules\ValidDni],
             'password' => 'required|string',
         ]);
 
@@ -27,8 +32,33 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $user = Auth::user();
+
+        // Si el usuario tiene 2FA activado, validamos el código
+        if (!empty($user->two_factor_secret)) {
+            if (!$request->has('totp_code')) {
+                // Cerramos la sesión temporal porque se requiere el 2FA
+                Auth::guard('web')->logout();
+                return response()->json([
+                    'message' => 'Código 2FA requerido.',
+                    'requires_2fa' => true
+                ], 403);
+            }
+
+            $google2fa = new Google2FA();
+            $valid = $google2fa->verifyKey($user->two_factor_secret, $request->totp_code);
+
+            if (!$valid) {
+                // Cerramos la sesión temporal porque falló el 2FA
+                Auth::guard('web')->logout();
+                return response()->json([
+                    'message' => 'El código 2FA proporcionado es incorrecto.'
+                ], 401);
+            }
+        }
+
         //Devolvemos el usuario cargando sus roles
-        $user = Auth::user()->load('roles');
+        $user->load('roles');
 
         return response()->json([
             'message' => 'Login exitoso',
@@ -67,7 +97,7 @@ class AuthController extends Controller
 
     public function forgotPassword(Request $request)
     {
-        $request->validate(['dni' => 'required|string']);
+        $request->validate(['dni' => ['required', 'string', new \App\Rules\ValidDni]]);
 
         $user = User::where('dni', $request->dni)->first();
 
@@ -96,15 +126,21 @@ class AuthController extends Controller
             'surname' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|max:255',
             'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
             'photo' => 'nullable|image|max:2048', // 2MB max
         ]);
 
         $user = $request->user();
 
-        if ($request->has('name')) $user->name = $request->name;
-        if ($request->has('surname')) $user->surname = $request->surname;
-        if ($request->has('email')) $user->email = $request->email;
+        // Solo admin o hr_director pueden cambiar su propio nombre, apellido o email desde aquí.
+        if ($user->hasRole(['admin', 'hr_director'])) {
+            if ($request->has('name')) $user->name = $request->name;
+            if ($request->has('surname')) $user->surname = $request->surname;
+            if ($request->has('email')) $user->email = $request->email;
+        }
+
         if ($request->has('phone')) $user->phone = $request->phone;
+        if ($request->has('address')) $user->address = $request->address;
 
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('profiles', 'public');
@@ -117,5 +153,73 @@ class AuthController extends Controller
             'message' => 'Perfil actualizado correctamente.',
             'user' => $user->load('roles')
         ]);
+    }
+
+    // --- 2FA Methods ---
+
+    public function generate2FA(Request $request)
+    {
+        $user = $request->user();
+
+        if (!empty($user->two_factor_secret)) {
+            return response()->json(['message' => 'El 2FA ya está activado en tu cuenta.'], 400);
+        }
+
+        $google2fa = new Google2FA();
+        // Generamos un secreto temporal que se guardará sólo cuando se confirme
+        $secret = $google2fa->generateSecretKey();
+
+        // Generamos la URL del QR
+        $qrCodeUrl = $google2fa->getQRCodeUrl(
+            config('app.name'),
+            $user->email,
+            $secret
+        );
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(250),
+            new SvgImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+        $svg = $writer->writeString($qrCodeUrl);
+
+        return response()->json([
+            'secret' => $secret,
+            'qr_svg' => base64_encode($svg),
+            'qr_url' => $qrCodeUrl, // para apps que prefieran leer la uri
+        ]);
+    }
+
+    public function confirm2FA(Request $request)
+    {
+        $request->validate([
+            'secret' => 'required|string',
+            'totp_code' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        $google2fa = new Google2FA();
+
+        $valid = $google2fa->verifyKey($request->secret, $request->totp_code);
+
+        if ($valid) {
+            $user->two_factor_secret = $request->secret;
+            $user->save();
+
+            return response()->json(['message' => 'Doble factor de autenticación activado con éxito.']);
+        }
+
+        return response()->json(['message' => 'El código proporcionado es incorrecto.'], 400);
+    }
+
+    public function disable2FA(Request $request)
+    {
+        // Require current password or TOTP to disable, here we simplify to avoid complex logic, 
+        // relying on current active Sanctum session.
+        $user = $request->user();
+        $user->two_factor_secret = null;
+        $user->save();
+
+        return response()->json(['message' => 'Doble factor de autenticación desactivado correctamente.']);
     }
 }

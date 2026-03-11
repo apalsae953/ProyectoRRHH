@@ -6,6 +6,8 @@ import axios from '../api/axios';
 const Login = () => {
     const [dni, setDni] = useState('');
     const [password, setPassword] = useState('');
+    const [totpCode, setTotpCode] = useState('');
+    const [show2faInput, setShow2faInput] = useState(false);
     const [error, setError] = useState('');
 
     const { login, user } = useAuth();
@@ -25,10 +27,19 @@ const Login = () => {
         setError('');
 
         try {
-            await login({ dni, password });
+            const credentials = { dni, password };
+            if (show2faInput) {
+                credentials.totp_code = totpCode;
+            }
+            await login(credentials);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al conectar con el servidor');
+            if (err.response?.data?.requires_2fa) {
+                setShow2faInput(true);
+                setError('');
+            } else {
+                setError(err.response?.data?.message || 'Error al conectar con el servidor');
+            }
         }
     };
 
@@ -62,29 +73,56 @@ const Login = () => {
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">DNI</label>
-                        <input
-                            type="text"
-                            placeholder="Ej. 12345678A"
-                            value={dni}
-                            onChange={(e) => setDni(e.target.value)}
-                            required
-                            className="w-full px-5 py-3.5 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate focus:border-corporate outline-none transition-all shadow-inner font-medium text-lg"
-                        />
-                    </div>
+                    {!show2faInput && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej. 12345678A"
+                                    value={dni}
+                                    onChange={(e) => setDni(e.target.value)}
+                                    required
+                                    className="w-full px-5 py-3.5 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate focus:border-corporate outline-none transition-all shadow-inner font-medium text-lg"
+                                />
+                            </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Contraseña</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="w-full px-5 py-3.5 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate focus:border-corporate outline-none transition-all shadow-inner font-medium text-lg"
-                        />
-                    </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Contraseña</label>
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="w-full px-5 py-3.5 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate focus:border-corporate outline-none transition-all shadow-inner font-medium text-lg"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {show2faInput && (
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Código 2FA / TOTP</label>
+                            <input
+                                type="text"
+                                placeholder="Ej. 123456"
+                                value={totpCode}
+                                onChange={(e) => setTotpCode(e.target.value)}
+                                required
+                                maxLength={6}
+                                className="w-full px-5 py-3.5 bg-gray-50 text-center tracking-[0.5em] font-mono text-gray-900 border border-gray-200 rounded-xl focus:ring-2 focus:ring-corporate focus:border-corporate outline-none transition-all shadow-inner font-bold text-xl uppercase"
+                            />
+                            <p className="text-xs text-slate-500 mt-2 text-center">Abre tu app de autenticación (Google Authenticator, Authy, etc) y obtén el código.</p>
+                            <button
+                                type="button"
+                                onClick={() => { setShow2faInput(false); setTotpCode(''); }}
+                                className="mt-4 w-full text-xs font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2"
+                            >
+                                Volver al inicio normal
+                            </button>
+                        </div>
+                    )}
 
                     {error && (
                         <div className="bg-red-50 border-l-4 border-red-500 p-3 text-red-700 text-sm font-bold rounded">

@@ -17,10 +17,12 @@ class VacationBalanceController extends Controller
         $year = $request->query('year', Carbon::now()->year);
         
         // Buscar el saldo. Si no existe en la BD para este año, lo crea con valores por defecto.
+        $defaultVacationDays = \App\Models\Setting::where('key', 'vacation_days_per_year')->value('value') ?? 22;
+
         $balance = VacationBalance::firstOrCreate(
             ['user_id' => $request->user()->id, 'year' => $year],
             [
-                'accrued_days' => 22, // Días por convenio general
+                'accrued_days' => (int)$defaultVacationDays,
                 'taken_days' => 0, 
                 'carried_over_days' => 0
             ]

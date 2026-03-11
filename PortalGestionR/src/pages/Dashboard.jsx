@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 const Dashboard = () => {
     const { user } = useAuth(); // Quitamos el logout, que ya se usa en el Layout
 
-    const isAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
+    const isAdmin = user?.roles?.some(r => r && (r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director'));
 
     return (
         <div className="animate-fade-in pb-10">
@@ -16,7 +16,7 @@ const Dashboard = () => {
                 <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div>
                         <span className="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-semibold tracking-wider mb-4 uppercase">Visión General</span>
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Bienvenido, {user.name}</h2>
+                        <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Bienvenido, {user?.name}</h2>
                         <p className="text-slate-400 text-lg max-w-xl font-medium">Aquí tienes el resumen de tu perfil y acceso a las herramientas de gestión de Globomatik.</p>
                     </div>
                     <div className="hidden lg:block">
@@ -56,7 +56,7 @@ const Dashboard = () => {
                         <i className="fa-regular fa-id-card text-xl"></i>
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">DNI Registrado</p>
-                    <p className="text-lg font-bold text-slate-800">{user.dni}</p>
+                    <p className="text-lg font-bold text-slate-800">{user?.dni}</p>
                 </div>
 
                 {/* Tarjeta 2 */}
@@ -65,7 +65,7 @@ const Dashboard = () => {
                         <i className="fa-regular fa-envelope text-xl"></i>
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Correo Electrónico</p>
-                    <p className="text-sm font-bold text-slate-800 truncate" title={user.email}>{user.email}</p>
+                    <p className="text-sm font-bold text-slate-800 truncate" title={user?.email}>{user?.email}</p>
                 </div>
 
                 {/* Tarjeta 3 */}
@@ -74,7 +74,7 @@ const Dashboard = () => {
                         <i className="fa-solid fa-briefcase text-xl"></i>
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Puesto Actual</p>
-                    <p className="text-lg font-bold text-slate-800">{user.position || 'Pendiente'}</p>
+                    <p className="text-lg font-bold text-slate-800">{user?.position?.name || 'Pendiente'}</p>
                 </div>
 
                 {/* Tarjeta 4 */}
@@ -83,7 +83,7 @@ const Dashboard = () => {
                         <i className="fa-regular fa-building text-xl"></i>
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Departamento</p>
-                    <p className="text-lg font-bold text-slate-800">{user.department_id ? 'Dep. #' + user.department_id : 'No asignado'}</p>
+                    <p className="text-lg font-bold text-slate-800">{user?.department_id ? 'Dep. #' + user.department_id : 'No asignado'}</p>
                 </div>
             </div>
 

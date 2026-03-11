@@ -28,11 +28,13 @@ class User extends Authenticatable
         'dni_normalizado',
         'password',
         'phone',
+        'address',
         'position_id',
         'department_id',
         'hired_at',
         'status',
         'two_factor_secret',
+        'probation_until',
     ];
 
     /**
@@ -55,6 +57,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'hired_at' => 'date',
+        'probation_until' => 'date',
     ];
 
     public function getActivitylogOptions(): LogOptions

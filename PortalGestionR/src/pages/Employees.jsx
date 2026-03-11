@@ -7,9 +7,9 @@ import { useAuth } from '../context/AuthContext';
 const Employees = () => {
     const { user } = useAuth();
     // ¿Es admin o de recursos humanos?
-    const isHrOrAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director');
+    const isHrOrAdmin = user?.roles?.some(r => r && (r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director'));
     // ¿Es estrictamente admin?
-    const isStrictAdmin = user && user.roles && user.roles.some(r => r === 'admin' || r.name === 'admin');
+    const isStrictAdmin = user?.roles?.some(r => r && (r === 'admin' || r.name === 'admin'));
 
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ const Employees = () => {
     // Modal state for adding employee
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newEmployee, setNewEmployee] = useState({
-        name: '', surname: '', email: '', dni: '', phone: '', position_id: '', department_id: '', roles: 'employee', hired_at: ''
+        name: '', surname: '', email: '', dni: '', phone: '', address: '', position_id: '', department_id: '', roles: 'employee', hired_at: '', probation_until: ''
     });
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
@@ -25,6 +25,7 @@ const Employees = () => {
     const [formError, setFormError] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState(null);
+    const [globalSettings, setGlobalSettings] = useState(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
@@ -50,12 +51,14 @@ const Employees = () => {
                 setEmployees(Array.isArray(employeeList) ? employeeList : []);
 
                 if (isHrOrAdmin) {
-                    const [deptRes, posRes] = await Promise.all([
+                    const [deptRes, posRes, settingsRes] = await Promise.all([
                         axios.get('/api/v1/departments'),
-                        axios.get('/api/v1/positions')
+                        axios.get('/api/v1/positions'),
+                        axios.get('/api/v1/settings')
                     ]);
                     setDepartments(deptRes.data);
                     setPositions(posRes.data);
+                    setGlobalSettings(settingsRes.data);
                 }
             } catch (error) {
                 console.error("Error al cargar datos", error);
@@ -80,7 +83,7 @@ const Employees = () => {
 
             await employeeService.createEmployee(payload);
             setIsAddModalOpen(false);
-            setNewEmployee({ name: '', surname: '', email: '', dni: '', phone: '', position_id: '', department_id: '', roles: 'employee', hired_at: '' });
+            setNewEmployee({ name: '', surname: '', email: '', dni: '', phone: '', address: '', position_id: '', department_id: '', roles: 'employee', hired_at: '', probation_until: '' });
 
             // Recargar empleados
             setLoading(true);
@@ -103,10 +106,12 @@ const Employees = () => {
             email: emp.email,
             dni: emp.dni || '',
             phone: emp.telefono || '',
+            address: emp.direccion || '',
             position_id: emp.puesto?.id || '',
             department_id: emp.departamento?.id || '',
             status: emp.estado || 'active',
             hired_at: emp.fecha_contratacion || '',
+            probation_until: emp.fecha_fin_prueba || '',
             roles: Array.isArray(emp.roles) ? emp.roles : []
         });
         setIsEditModalOpen(true);
@@ -170,6 +175,17 @@ const Employees = () => {
             fetchEmployeeDocs(selectedEmployeeForDocs.id);
         } catch (error) {
             alert("Error al eliminar");
+        }
+    };
+
+    const handleReset2FA = async (employee) => {
+        if (!window.confirm(`¿Estás seguro de que deseas desactivar el 2FA de ${employee.nombre}?`)) return;
+        try {
+            await axios.post(`/api/v1/employees/${employee.id}/reset-2fa`);
+            alert('Doble factor desactivado correctamente.');
+            fetchEmployees();
+        } catch (error) {
+            alert('Error al resetear 2FA.');
         }
     };
 
@@ -378,6 +394,15 @@ const Employees = () => {
                                                 >
                                                     <i className="fa-solid fa-file-invoice"></i>
                                                 </button>
+                                                {emp.has_2fa_active && (
+                                                    <button
+                                                        onClick={() => handleReset2FA(emp)}
+                                                        className="text-amber-500 hover:text-amber-600 bg-amber-50 hover:bg-amber-100 font-bold w-10 h-10 flex items-center justify-center rounded-xl transition-all shadow-sm"
+                                                        title="Resetear 2FA (Emergencia)"
+                                                    >
+                                                        <i className="fa-solid fa-unlock-keyhole"></i>
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleEditClick(emp)}
                                                     className="text-slate-400 hover:text-corporate bg-slate-50 hover:bg-corporate/10 font-bold px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-2 group-hover:shadow-sm"
@@ -472,6 +497,10 @@ const Employees = () => {
                                             <input type="text" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. 600000000" />
                                         </div>
                                         <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Dirección</label>
+                                            <input type="text" value={newEmployee.address} onChange={e => setNewEmployee({ ...newEmployee, address: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Dirección completa" />
+                                        </div>
+                                        <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-1.5">Puesto a desempeñar</label>
                                             <select value={newEmployee.position_id} onChange={e => setNewEmployee({ ...newEmployee, position_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
                                                 <option value="">Selecciona un puesto...</option>
@@ -502,6 +531,11 @@ const Employees = () => {
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha de Contratación</label>
                                             <input type="date" required value={newEmployee.hired_at} onChange={e => setNewEmployee({ ...newEmployee, hired_at: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Fin Periodo de Prueba (Opcional)</label>
+                                            <input type="date" value={newEmployee.probation_until} onChange={e => setNewEmployee({ ...newEmployee, probation_until: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                            <span className="text-[10px] text-slate-400 font-medium">Si se deja vacío, se aplicará la política global ({globalSettings?.probation_months_default || 6} meses).</span>
                                         </div>
                                     </div>
 
@@ -556,6 +590,10 @@ const Employees = () => {
                                             <input type="text" value={editingEmployee.phone} onChange={e => setEditingEmployee({ ...editingEmployee, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
                                         </div>
                                         <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Dirección</label>
+                                            <input type="text" value={editingEmployee.address} onChange={e => setEditingEmployee({ ...editingEmployee, address: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                        </div>
+                                        <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-1.5">Puesto</label>
                                             <select value={editingEmployee.position_id} onChange={e => setEditingEmployee({ ...editingEmployee, position_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
                                                 {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -575,8 +613,12 @@ const Employees = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha de Contratación</label>
+                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha Contratación</label>
                                             <input type="date" required value={editingEmployee.hired_at} onChange={e => setEditingEmployee({ ...editingEmployee, hired_at: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Fin Periodo Prueba</label>
+                                            <input type="date" value={editingEmployee.probation_until} onChange={e => setEditingEmployee({ ...editingEmployee, probation_until: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
                                         </div>
                                         {isStrictAdmin && (
                                             <div>

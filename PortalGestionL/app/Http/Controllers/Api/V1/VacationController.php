@@ -43,6 +43,36 @@ class VacationController extends Controller
         return VacationResource::collection($vacations);
     }
 
+    public function calendar(Request $request)
+    {
+        $user = $request->user();
+
+        // Validar permisos: Solo la directiva puede ver el calendario global de vacaciones completo
+        if (!$user->hasRole(['admin', 'hr_director'])) {
+             return response()->json(['message' => 'Acceso denegado. Solo RRHH o Admin pueden ver el calendario global.'], 403);
+        }
+
+        // Devolvemos las vacaciones aprobadas o pendientes, cargando usuario
+        $vacations = Vacation::with('user')
+            ->whereIn('status', ['approved', 'pending'])
+            ->get();
+
+        return response()->json([
+            'data' => $vacations->map(function ($vacation) {
+                return [
+                    'id' => $vacation->id,
+                    'title' => $vacation->user->name . ' ' . $vacation->user->surname,
+                    'start' => $vacation->start_date,
+                    'end' => Carbon::parse($vacation->end_date)->addDay()->format('Y-m-d'), // Calendarios suelen ser exclusivos en el fin
+                    'status' => $vacation->status,
+                    'user_id' => $vacation->user_id,
+                    'type' => $vacation->type,
+                    'days_used' => $vacation->days_used,
+                ];
+            })
+        ]);
+    }
+
     public function myVacations(Request $request)
     {
         // Traemos sus vacaciones ordenadas por las más recientes y cargamos quién las aprobó
@@ -71,6 +101,15 @@ class VacationController extends Controller
 
         if ($hasOverlap) {
             return response()->json(['message' => 'Ya tienes una solicitud pendiente o aprobada que se solapa con estas fechas.'], 422);
+        }
+
+        // --- VALIDAR POLÍTICA DE HORAS EXTRA ---
+        $type = $request->type ?? 'vacation';
+        if ($type === 'overtime') {
+            $allowOvertime = \App\Models\Setting::where('key', 'allow_overtime_request')->value('value') ?? 'true';
+            if ($allowOvertime === 'false') {
+                return response()->json(['message' => 'Las solicitudes de compensación por horas extra están desactivadas globalmente.'], 403);
+            }
         }
 
         // --- CÁLCULO DE DÍAS ---
@@ -106,6 +145,7 @@ class VacationController extends Controller
             'start_date' => $startDate,
             'end_date' => $endDate,
             'days' => $daysRequested,
+            'type' => $type,
             'status' => 'pending', // Entra como pendiente directamente a RRHH
             'note' => $request->note,
         ]);
@@ -163,6 +203,13 @@ class VacationController extends Controller
                 'status' => 'canceled',
                 'cancel_reason' => $request->cancel_reason
             ]);
+
+            // Notificamos a RRHH de la cancelación
+            try {
+                Mail::to('jefesupremogm@gmail.com')->send(new \App\Mail\VacationCanceledAdmin($vacation));
+            } catch (\Exception $e) {
+                \Log::error('Error avisando al admin de cancelación: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'message' => 'Solicitud cancelada correctamente y saldo actualizado.', 

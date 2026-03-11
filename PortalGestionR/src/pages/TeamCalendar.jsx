@@ -4,9 +4,9 @@ import { useAuth } from '../context/AuthContext';
 
 const TeamCalendar = () => {
     const { user } = useAuth();
-    const isHrOrAdmin = user && user.roles && user.roles.some(r =>
+    const isHrOrAdmin = user?.roles?.some(r => r && (
         r === 'admin' || r === 'hr_director' || (r.name && (r.name === 'admin' || r.name === 'hr_director'))
-    );
+    ));
 
     const [viewDate, setViewDate] = useState(new Date());
     const [vacations, setVacations] = useState([]);
@@ -167,7 +167,7 @@ const TeamCalendar = () => {
                                     {dayVacations.map(v => (
                                         <div key={v.id} className="text-[8px] bg-corporate text-white p-1 rounded-md font-medium truncate leading-none" title={`${v.empleado?.nombre || 'Alguien'} de vacaciones`}>
                                             <i className="fa-solid fa-umbrella-beach mr-0.5"></i>
-                                            {v.empleado?.nombre}
+                                            {v.empleado?.nombre || 'Alguien'}
                                         </div>
                                     ))}
                                 </div>

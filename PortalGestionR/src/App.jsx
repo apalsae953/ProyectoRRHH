@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
@@ -12,12 +12,14 @@ import Profile from './pages/Profile';
 import Documents from './pages/Documents';
 import TeamCalendar from './pages/TeamCalendar';
 import Holidays from './pages/Holidays';
+import Reports from './pages/Reports';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/dashboard" element={<Navigate to="/" replace />} />
 
         {/* Rutas Protegidas */}
         <Route element={<ProtectedRoute />}>
@@ -30,6 +32,7 @@ function App() {
             <Route path="/gestion-vacaciones" element={<AdminVacations />} />
             <Route path="/organizacion" element={<AdminSettings />} />
             <Route path="/documentos" element={<Documents />} />
+            <Route path="/reportes" element={<Reports />} />
             <Route path="/seguridad" element={<ChangePassword />} />
             <Route path="/perfil" element={<Profile />} />
           </Route>

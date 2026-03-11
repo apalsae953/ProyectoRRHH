@@ -11,28 +11,30 @@ class VacationResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'fecha_inicio' => $this->start_date->format('Y-m-d'),
-            'fecha_fin' => $this->end_date->format('Y-m-d'),
+            'fecha_inicio' => $this->start_date ? $this->start_date->format('Y-m-d') : null,
+            'fecha_fin' => $this->end_date ? $this->end_date->format('Y-m-d') : null,
             'dias_solicitados' => $this->days,
             'estado' => $this->status, // draft, pending, approved, rejected, canceled
+            'tipo' => $this->type ?? 'vacation', // vacation, sick_leave
             'nota' => $this->note,
+            'motivo_cancelacion' => $this->cancel_reason,
             'mensaje_admin' => $this->admin_message,
-            'fecha_solicitud' => $this->created_at->format('Y-m-d H:i:s'),
+            'fecha_solicitud' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             
             // Quién la aprobó (si ya fue aprobada)
             'aprobado_por' => $this->whenLoaded('approver', function () {
-                return [
+                return $this->approver ? [
                     'id' => $this->approver->id,
                     'nombre' => $this->approver->name . ' ' . $this->approver->surname,
-                ];
+                ] : null;
             }),
             
             // El empleado (útil para la vista global de RRHH)
             'empleado' => $this->whenLoaded('user', function () {
-                return [
+                return $this->user ? [
                     'id' => $this->user->id,
                     'nombre' => $this->user->name . ' ' . $this->user->surname,
-                ];
+                ] : null;
             }),
         ];
     }
