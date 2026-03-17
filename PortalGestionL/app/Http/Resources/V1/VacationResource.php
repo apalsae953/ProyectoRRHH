@@ -14,6 +14,7 @@ class VacationResource extends JsonResource
             'fecha_inicio' => $this->start_date ? $this->start_date->format('Y-m-d') : null,
             'fecha_fin' => $this->end_date ? $this->end_date->format('Y-m-d') : null,
             'dias_solicitados' => $this->days,
+            'horas' => $this->hours,
             'estado' => $this->status, // draft, pending, approved, rejected, canceled
             'tipo' => $this->type ?? 'vacation', // vacation, sick_leave
             'nota' => $this->note,

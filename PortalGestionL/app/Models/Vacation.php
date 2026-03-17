@@ -18,6 +18,7 @@ class Vacation extends Model
         'end_date',
         'type',
         'days',
+        'hours',
         'status',
         'approver_id',
         'note',

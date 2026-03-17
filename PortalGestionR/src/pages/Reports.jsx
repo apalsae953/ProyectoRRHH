@@ -406,7 +406,7 @@ const Reports = () => {
                                                             {log.event === 'updated' && log.properties.old ? (
                                                                 // Vista de cambios: Antes -> Después
                                                                 Object.entries(log.properties.attributes || {})
-                                                                    .filter(([key]) => key !== 'password' && key !== 'remember_token' && key !== 'dni_normalizado' && key !== 'two_factor_secret' && key !== 'updated_at')
+                                                                    .filter(([key]) => key !== 'dni' && key !== 'password' && key !== 'remember_token' && key !== 'dni_normalizado' && key !== 'two_factor_secret' && key !== 'updated_at')
                                                                     .map(([key, value]) => (
                                                                         <div key={key} className="text-[11px] leading-relaxed">
                                                                             <span className="font-bold text-slate-600">{translateKey(key)}:</span>
@@ -418,7 +418,7 @@ const Reports = () => {
                                                             ) : (
                                                                 // Vista simple de valores (Creación o sin histórico)
                                                                 Object.entries(log.properties.attributes || log.properties.old || {})
-                                                                    .filter(([key]) => key !== 'password' && key !== 'remember_token' && key !== 'dni_normalizado' && key !== 'two_factor_secret' && key !== 'updated_at')
+                                                                    .filter(([key]) => key !== 'dni' && key !== 'password' && key !== 'remember_token' && key !== 'dni_normalizado' && key !== 'two_factor_secret' && key !== 'updated_at')
                                                                     .map(([key, value]) => (
                                                                         <div key={key} className="text-[11px] flex items-center gap-2">
                                                                             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>

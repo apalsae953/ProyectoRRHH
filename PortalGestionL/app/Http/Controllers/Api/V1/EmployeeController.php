@@ -82,11 +82,25 @@ class EmployeeController extends Controller
         // --- INICIALIZAR SALDO DE VACACIONES ---
         // Obtenemos los días por defecto de la configuración global
         $defaultVacationDays = \App\Models\Setting::where('key', 'vacation_days_per_year')->value('value') ?? 22;
+        
+        $accruedDays = (float)$defaultVacationDays;
+        
+        // Si ha sido contratado este año, calculamos la parte proporcional
+        if ($user->hired_at && $user->hired_at->year == (int)date('Y')) {
+            $hiredAt = \Carbon\Carbon::parse($user->hired_at);
+            $endOfYear = \Carbon\Carbon::create((int)date('Y'), 12, 31);
+            
+            $daysInYear = $hiredAt->isLeapYear() ? 366 : 365;
+            $daysWorked = $hiredAt->diffInDays($endOfYear) + 1; // Días que le quedan por trabajar
+            
+            // Calculamos: (DíasAnuales / 365) * DíasTrabajados
+            $accruedDays = round(($defaultVacationDays / $daysInYear) * $daysWorked, 1);
+        }
 
         VacationBalance::create([
             'user_id' => $user->id,
             'year' => date('Y'),
-            'accrued_days' => (int)$defaultVacationDays,
+            'accrued_days' => $accruedDays,
             'taken_days' => 0,
             'carried_over_days' => 0,
         ]);

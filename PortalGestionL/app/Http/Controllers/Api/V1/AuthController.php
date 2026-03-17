@@ -21,12 +21,15 @@ class AuthController extends Controller
     {
         //Validamos que nos envíen el DNI
         $request->validate([
-            'dni' => ['required', 'string', new \App\Rules\ValidDni],
+            'dni' => ['required', 'string'],
             'password' => 'required|string',
         ]);
 
-        //Le decimos a Laravel que busque al usuario por la columna 'dni'
-        if (!Auth::attempt($request->only('dni', 'password'))) {
+        // Normalizar el DNI para la búsqueda (mayúsculas y quitar espacios/guiones)
+        $dniNormalizado = strtoupper(str_replace(['-', ' '], '', $request->dni));
+
+        // Le decimos a Laravel que busque al usuario por la columna 'dni_normalizado'
+        if (!Auth::attempt(['dni_normalizado' => $dniNormalizado, 'password' => $request->password])) {
             return response()->json([
                 'message' => 'Credenciales incorrectas. Revisa tu DNI o contraseña.'
             ], 401);
@@ -99,7 +102,8 @@ class AuthController extends Controller
     {
         $request->validate(['dni' => ['required', 'string', new \App\Rules\ValidDni]]);
 
-        $user = User::where('dni', $request->dni)->first();
+        $dniNormalizado = strtoupper(str_replace(['-', ' '], '', $request->dni));
+        $user = User::where('dni_normalizado', $dniNormalizado)->first();
 
         if (!$user) {
             return response()->json(['message' => 'No se ha encontrado ningún empleado con ese DNI.'], 404);
@@ -111,7 +115,8 @@ class AuthController extends Controller
 
         try {
             \Illuminate\Support\Facades\Mail::to($user->email)->send(new PasswordResetMail($user, $newPassword));
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             \Log::error('Error enviando reset de contraseña: ' . $e->getMessage());
             return response()->json(['message' => 'La contraseña se ha reseteado pero hubo un error enviando el email. Contacta con RRHH.'], 500);
         }
@@ -134,13 +139,18 @@ class AuthController extends Controller
 
         // Solo admin o hr_director pueden cambiar su propio nombre, apellido o email desde aquí.
         if ($user->hasRole(['admin', 'hr_director'])) {
-            if ($request->has('name')) $user->name = $request->name;
-            if ($request->has('surname')) $user->surname = $request->surname;
-            if ($request->has('email')) $user->email = $request->email;
+            if ($request->has('name'))
+                $user->name = $request->name;
+            if ($request->has('surname'))
+                $user->surname = $request->surname;
+            if ($request->has('email'))
+                $user->email = $request->email;
         }
 
-        if ($request->has('phone')) $user->phone = $request->phone;
-        if ($request->has('address')) $user->address = $request->address;
+        if ($request->has('phone'))
+            $user->phone = $request->phone;
+        if ($request->has('address'))
+            $user->address = $request->address;
 
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('profiles', 'public');
@@ -179,7 +189,7 @@ class AuthController extends Controller
         $renderer = new ImageRenderer(
             new RendererStyle(250),
             new SvgImageBackEnd()
-        );
+            );
         $writer = new Writer($renderer);
         $svg = $writer->writeString($qrCodeUrl);
 

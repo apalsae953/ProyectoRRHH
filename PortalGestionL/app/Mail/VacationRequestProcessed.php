@@ -28,8 +28,9 @@ class VacationRequestProcessed extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = ($this->vacation->type === 'overtime') ? 'Estado de tu solicitud de Horas Extra' : 'Estado de tu solicitud de Vacaciones';
         return new Envelope(
-            subject: 'Estado de tu solicitud de Vacaciones',
+            subject: $subject,
         );
     }
 

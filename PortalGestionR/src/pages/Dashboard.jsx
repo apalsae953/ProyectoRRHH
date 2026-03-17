@@ -1,4 +1,6 @@
 import { useAuth } from '../context/AuthContext';
+import axios from '../api/axios';
+import { maskDni } from '../utils/formatters';
 
 const Dashboard = () => {
     const { user } = useAuth(); // Quitamos el logout, que ya se usa en el Layout
@@ -51,16 +53,16 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {/* Tarjeta 1 */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                <div className="bg-white rounded-2xl p-6 border border-slate-300 shadow-md hover:shadow-lg hover:border-corporate/40 transition-all duration-300 group">
                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
                         <i className="fa-regular fa-id-card text-xl"></i>
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">DNI Registrado</p>
-                    <p className="text-lg font-bold text-slate-800">{user?.dni}</p>
+                    <p className="text-lg font-bold text-slate-800">{maskDni(user?.dni)}</p>
                 </div>
 
                 {/* Tarjeta 2 */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                <div className="bg-white rounded-2xl p-6 border border-slate-300 shadow-md hover:shadow-lg hover:border-corporate/40 transition-all duration-300 group">
                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
                         <i className="fa-regular fa-envelope text-xl"></i>
                     </div>
@@ -69,7 +71,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Tarjeta 3 */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                <div className="bg-white rounded-2xl p-6 border border-slate-300 shadow-md hover:shadow-lg hover:border-corporate/40 transition-all duration-300 group">
                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
                         <i className="fa-solid fa-briefcase text-xl"></i>
                     </div>
@@ -78,7 +80,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Tarjeta 4 */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-corporate/30 transition-all duration-300 group">
+                <div className="bg-white rounded-2xl p-6 border border-slate-300 shadow-md hover:shadow-lg hover:border-corporate/40 transition-all duration-300 group">
                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 mb-4 group-hover:bg-corporate/10 group-hover:text-corporate transition-colors">
                         <i className="fa-regular fa-building text-xl"></i>
                     </div>

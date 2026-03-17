@@ -14,19 +14,38 @@ class VacationBalanceController extends Controller
     
     public function myBalance(Request $request)
     {
+        $user = $request->user();
         $year = $request->query('year', Carbon::now()->year);
         
-        // Buscar el saldo. Si no existe en la BD para este año, lo crea con valores por defecto.
-        $defaultVacationDays = \App\Models\Setting::where('key', 'vacation_days_per_year')->value('value') ?? 22;
+        // Buscar el saldo actual
+        $balance = VacationBalance::where('user_id', $user->id)->where('year', $year)->first();
 
-        $balance = VacationBalance::firstOrCreate(
-            ['user_id' => $request->user()->id, 'year' => $year],
-            [
+        // Si no existe, lo creamos calculando la parte proporcional y el arrastre
+        if (!$balance) {
+            $defaultVacationDays = \App\Models\Setting::where('key', 'vacation_days_per_year')->value('value') ?? 22;
+            $maxCarryover = \App\Models\Setting::where('key', 'max_vacation_carryover')->value('value') ?? 5;
+
+            $carriedOver = 0;
+            // Intentar buscar el saldo del año anterior para el arrastre (días no disfrutados)
+            $prevBalance = VacationBalance::where('user_id', $user->id)->where('year', $year - 1)->first();
+            if ($prevBalance) {
+                // El sobrante es (Asignados + Arrastrados del anterior) - Ya disfrutados
+                $remaining = ($prevBalance->accrued_days + $prevBalance->carried_over_days) - $prevBalance->taken_days;
+                $carriedOver = max(0, min($remaining, (float)$maxCarryover));
+            }
+
+            // Expiración por defecto del arrastre: 31 de Marzo del año actual
+            $expiresAt = Carbon::createFromDate($year, 3, 31);
+
+            $balance = VacationBalance::create([
+                'user_id' => $user->id,
+                'year' => $year,
                 'accrued_days' => (int)$defaultVacationDays,
                 'taken_days' => 0, 
-                'carried_over_days' => 0
-            ]
-        );
+                'carried_over_days' => $carriedOver,
+                'expires_at' => $expiresAt
+            ]);
+        }
 
         return new VacationBalanceResource($balance);
     }

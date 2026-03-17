@@ -20,25 +20,37 @@ class VacationController extends Controller
     {
         $user = $request->user();
 
-        //Validar permisos: Solo la directiva puede ver las vacaciones de todos
-        if (!$user->hasRole(['admin', 'hr_director'])) {
-            return response()->json(['message' => 'Acceso denegado. Solo RRHH o Admin pueden ver todas las vacaciones.'], 403);
-        }
-
         // Iniciar la consulta cargando al empleado y al aprobador 
         $query = Vacation::with(['user', 'approver']);
 
+        // Si NO es admin/rrhh, solo puede ver las aprobadas o las suyas propias
+        if (!$user->hasRole(['admin', 'hr_director'])) {
+            $query->where(function ($q) use ($user) {
+                $q->where('status', 'approved')
+                  ->orWhere('user_id', $user->id);
+            });
+        }
+
         // Aplicar filtros dinámicos si vienen en la URL (ej: /vacations?status=pending)
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            // Si es un empleado normal y pide 'pending', no debería ver las de otros
+            if (!$user->hasRole(['admin', 'hr_director']) && $request->status === 'pending') {
+                $query->where('status', 'pending')->where('user_id', $user->id);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
         
         if ($request->has('user_id')) {
+            // Un empleado solo puede filtrar por su propio ID
+            if (!$user->hasRole(['admin', 'hr_director']) && (int)$request->user_id !== $user->id) {
+                 return response()->json(['message' => 'No tienes permiso para ver las vacaciones de este usuario.'], 403);
+            }
             $query->where('user_id', $request->user_id);
         }
 
-        // Ordenar por fecha de inicio más reciente y paginar
-        $vacations = $query->latest('start_date')->paginate(15);
+        // Ordenamos por fecha de inicio para que las más recientes aparezcan primero
+        $vacations = $query->latest('start_date')->get();
 
         return VacationResource::collection($vacations);
     }
@@ -75,8 +87,8 @@ class VacationController extends Controller
 
     public function myVacations(Request $request)
     {
-        // Traemos sus vacaciones ordenadas por las más recientes y cargamos quién las aprobó
-        $vacations = $request->user()->vacations()->with('approver')->latest('start_date')->paginate(10);
+        // Recuperamos todas las solicitudes del usuario autenticado para que el frontend gestione la visualización
+        $vacations = $request->user()->vacations()->with('approver')->latest('start_date')->get();
         
         return VacationResource::collection($vacations);
     }
@@ -87,9 +99,9 @@ class VacationController extends Controller
         $startDate = Carbon::parse($request->start_date); // Convertimos a Carbon para facilitar cálculos
         $endDate = Carbon::parse($request->end_date);
         
-        // Evitamos que se solapen
+        // Comprobar solapamiento con otras solicitudes (pendientes o aprobadas)
         $hasOverlap = Vacation::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'approved']) // Solo comprobamos las pendientes o aprobadas
+            ->whereIn('status', ['pending', 'approved'])
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->whereBetween('start_date', [$startDate, $endDate])
                       ->orWhereBetween('end_date', [$startDate, $endDate])
@@ -104,39 +116,52 @@ class VacationController extends Controller
         }
 
         // --- VALIDAR POLÍTICA DE HORAS EXTRA ---
-        $type = $request->type ?? 'vacation';
+        $type = $request->input('type', 'vacation');
+        $hours = null;
+        $daysRequested = 0;
+
         if ($type === 'overtime') {
             $allowOvertime = \App\Models\Setting::where('key', 'allow_overtime_request')->value('value') ?? 'true';
             if ($allowOvertime === 'false') {
                 return response()->json(['message' => 'Las solicitudes de compensación por horas extra están desactivadas globalmente.'], 403);
             }
+            $hours = $request->input('hours');
+            if (!$hours) {
+                // Si no viene en campo aparte, intentar extraerlo de la nota (por compatibilidad temporal)
+                preg_match('/Compensación: ([\d.]+) horas/', $request->note, $matches);
+                $hours = isset($matches[1]) ? (float)$matches[1] : 0;
+            }
+            // Estimación de días: 8h = 1 día (o lo guardamos como decimal)
+            $hoursPerDay = \App\Models\Setting::where('key', 'hours_per_working_day')->value('value') ?? 8;
+            $daysRequested = $hours / (float)$hoursPerDay;
+        } else {
+            // --- CÁLCULO DE DÍAS (SOLO PARA VACACIONES O ENFERMEDAD) ---
+            // Obtener festivos en el rango para no descontarlos del saldo
+            $holidays = \App\Models\HolidayDate::whereBetween('date', [$startDate, $endDate])
+                ->get()
+                ->pluck('date')
+                ->map(function($date) {
+                    return $date->format('Y-m-d');
+                })
+                ->toArray();
+
+            // Aquí calculamos los días laborables restando fines de semana y la tabla 'holiday_dates'
+            $daysRequested = $startDate->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
+                return $date->isWeekday() && !in_array($date->format('Y-m-d'), $holidays); 
+            }, $endDate) + 1;
         }
 
-        // --- CÁLCULO DE DÍAS ---
-        // Obtenemos los festivos registrados en esas fechas
-        $holidays = \App\Models\HolidayDate::whereBetween('date', [$startDate, $endDate])
-            ->pluck('date')
-            ->map(function($date) {
-                return $date->format('Y-m-d');
-            })
-            ->toArray();
+        // --- Validar Saldo (SOLO PARA VACACIONES) ---
+        if ($type === 'vacation') {
+            $currentYear = $startDate->year;
+            $balance = VacationBalance::where('user_id', $user->id)->where('year', $currentYear)->first();
+            $diasDisponibles = $balance ? ($balance->accrued_days + $balance->carried_over_days - $balance->taken_days) : 0;
 
-        // Aquí calculamos los días laborables restando fines de semana y la tabla 'holiday_dates'
-        $daysRequested = $startDate->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
-            return $date->isWeekday() && !in_array($date->format('Y-m-d'), $holidays); // Solo cuenta de lunes a viernes y no festivos
-        }, $endDate) + 1; // +1 para incluir el día de inicio
-
-        // --- Validar Saldo ---
-        $currentYear = $startDate->year;
-        $balance = VacationBalance::where('user_id', $user->id)->where('year', $currentYear)->first();
-
-        // Asumimos que si no tiene registro de saldo, tiene 0 días
-        $diasDisponibles = $balance ? ($balance->accrued_days + $balance->carried_over_days - $balance->taken_days) : 0;
-
-        if ($daysRequested > $diasDisponibles) {
-            return response()->json([
-                'message' => "No tienes saldo suficiente. Días solicitados: {$daysRequested}. Saldo disponible: {$diasDisponibles}."
-            ], 422);
+            if ($daysRequested > $diasDisponibles) {
+                return response()->json([
+                    'message' => "No tienes saldo suficiente. Días solicitados: {$daysRequested}. Saldo disponible: {$diasDisponibles}."
+                ], 422);
+            }
         }
 
         // --- CREACIÓN ---
@@ -144,9 +169,10 @@ class VacationController extends Controller
             'user_id' => $user->id,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'days' => $daysRequested,
             'type' => $type,
-            'status' => 'pending', // Entra como pendiente directamente a RRHH
+            'days' => $daysRequested,
+            'hours' => $hours,
+            'status' => 'pending', 
             'note' => $request->note,
         ]);
 
@@ -168,9 +194,11 @@ class VacationController extends Controller
     {
         $user = $request->user();
 
-        // Validar que la solicitud pertenece al usuario que la intenta cancelar
-        if ($vacation->user_id !== $user->id) {
-            return response()->json(['message' => 'Acceso denegado. No es tu solicitud.'], 403);
+        $isHrOrAdmin = $user->hasRole(['admin', 'hr_director']);
+
+        // Validar que la solicitud pertenece al usuario que la intenta cancelar, a menos que sea Admin/RRHH
+        if ($vacation->user_id !== $user->id && !$isHrOrAdmin) {
+            return response()->json(['message' => 'Acceso denegado. No tienes permiso para cancelar esta solicitud.'], 403);
         }
 
         // Si la petición incluye el cambio de estado a cancelado
@@ -182,19 +210,27 @@ class VacationController extends Controller
             }
 
             $startDate = Carbon::parse($vacation->start_date);
-            if ($startDate->isPast() || $startDate->isToday()) {
-                return response()->json(['message' => 'No puedes cancelar vacaciones que ya han empezado o han pasado.'], 422);
+            // Si el día ya ha pasado/es hoy, el empleado NO puede cancelar, pero el ADMIN SÍ (por si no se hicieron las horas, etc)
+            if (($startDate->isPast() || $startDate->isToday()) && !$isHrOrAdmin) {
+                return response()->json(['message' => 'No puedes cancelar solicitudes que ya han empezado o han pasado. Contacta con RRHH.'], 422);
             }
 
             // Exigimos motivo de cancelación
             $request->validate(['cancel_reason' => 'required|string|min:5']);
 
-            // Si estaba aprobada, RESTAURAMOS el saldo al trabajador
+            // Ajustar saldo si la solicitud ya estaba aprobada
             if ($vacation->status === 'approved') {
                 $year = $startDate->year;
                 $balance = VacationBalance::where('user_id', $vacation->user_id)->where('year', $year)->first();
+                
                 if ($balance) {
-                    $balance->taken_days -= $vacation->days;
+                    if ($vacation->type === 'vacation') {
+                        // Restauramos días de vacaciones (quitamos de los disfrutados)
+                        $balance->taken_days -= $vacation->days;
+                    } elseif ($vacation->type === 'overtime') {
+                        // Quitamos los días compensatorios que se habían sumado
+                        $balance->accrued_days -= $vacation->days;
+                    }
                     $balance->save();
                 }
             }
@@ -237,12 +273,26 @@ class VacationController extends Controller
             return response()->json(['message' => 'La solicitud no está en estado pendiente.'], 422);
         }
 
-        // Descontar saldo de vacaciones del año correspondiente 
-        $currentYear = \Carbon\Carbon::parse($vacation->start_date)->year;
-        $balance = VacationBalance::where('user_id', $vacation->user_id)->where('year', $currentYear)->first();
+        // Gestionar saldo según el tipo
+        if ($vacation->type === 'vacation') {
+            // Descontar del tomado
+            $currentYear = \Carbon\Carbon::parse($vacation->start_date)->year;
+            $balance = VacationBalance::where('user_id', $vacation->user_id)->where('year', $currentYear)->first();
 
-        if ($balance) {
-            $balance->taken_days += $vacation->days;
+            if ($balance) {
+                $balance->taken_days += $vacation->days;
+                $balance->save();
+            }
+        } elseif ($vacation->type === 'overtime') {
+            // INCREMENTAR el saldo acumulado (compensatorio)
+            $currentYear = \Carbon\Carbon::parse($vacation->start_date)->year;
+            $balance = VacationBalance::firstOrCreate(
+                ['user_id' => $vacation->user_id, 'year' => $currentYear],
+                ['accrued_days' => 0, 'taken_days' => 0, 'carried_over_days' => 0]
+            );
+            
+            // Si trabajó horas extra, se le suman a sus días acumulados
+            $balance->accrued_days += (float)$vacation->days;
             $balance->save();
         }
 

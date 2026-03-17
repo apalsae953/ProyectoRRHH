@@ -28,8 +28,9 @@ class VacationRequestedAdmin extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subjectPrefix = ($this->vacation->type === 'overtime') ? 'Nueva Solicitud de Horas Extra' : 'Nueva Solicitud de Vacaciones';
         return new Envelope(
-            subject: 'Nueva Solicitud de Vacaciones de ' . $this->vacation->user->full_name,
+            subject: $subjectPrefix . ' de ' . $this->vacation->user->full_name,
         );
     }
 

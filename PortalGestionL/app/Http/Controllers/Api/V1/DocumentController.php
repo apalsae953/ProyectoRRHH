@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\V1\DocumentResource;
 use App\Http\Requests\Api\V1\StoreDocumentRequest;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class DocumentController extends Controller
 {
@@ -70,6 +71,13 @@ class DocumentController extends Controller
             'visibility' => $request->visibility,
         ]);
 
+        // Enviar notificación al empleado
+        try {
+            \Illuminate\Support\Facades\Mail::to($employee->email)->send(new \App\Mail\DocumentUploadedNotification($document));
+        } catch (\Exception $e) {
+            Log::error('Error enviando notificación de documento: ' . $e->getMessage());
+        }
+
         return new DocumentResource($document);
     }
 
@@ -91,7 +99,13 @@ class DocumentController extends Controller
         $extension = 'pdf';
         if (str_contains($document->mime, 'image/jpeg')) $extension = 'jpg';
         elseif (str_contains($document->mime, 'image/png')) $extension = 'png';
-        
+
+        // Registrar la descarga en el log de auditoría
+        activity()
+            ->performedOn($document)
+            ->causedBy($user)
+            ->log('Descarga de documento');
+
         return Storage::download($document->path, $document->title . '.' . $extension);
     }
 

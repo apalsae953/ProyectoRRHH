@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
+import axios from '../api/axios';
 import vacationService from '../services/vacationService';
 
+import { useAuth } from '../context/AuthContext';
+
 const Vacations = () => {
+    const { user } = useAuth();
+    const isHrOrAdmin = user?.roles?.some(r => r && (r === 'admin' || r === 'hr_director' || r.name === 'admin' || r.name === 'hr_director'));
+
     const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     const [vacations, setVacations] = useState([]);
@@ -30,10 +36,12 @@ const Vacations = () => {
             const [vacationsRes, balanceRes, holidayRes, settingsRes] = await Promise.all([
                 vacationService.getMyVacations(),
                 vacationService.getMyBalance().catch(() => null),
-                import('../api/axios').then(m => m.default.get('/api/v1/holidays')),
-                import('../api/axios').then(m => m.default.get('/api/v1/settings'))
+                axios.get('/api/v1/holidays'),
+                axios.get('/api/v1/settings').catch(() => ({ data: {} }))
             ]);
-            setGlobalSettings(settingsRes.data);
+            
+            const settingsData = settingsRes.data || {};
+            setGlobalSettings(settingsData);
 
             setVacations(vacationsRes.data?.data || vacationsRes.data || []);
             setHolidays(holidayRes.data?.data || []);
@@ -41,7 +49,7 @@ const Vacations = () => {
                 dias_generados_hasta_hoy: 0,
                 dias_disfrutados: 0,
                 dias_totales_disponibles: 0,
-                dias_base_anuales: parseInt(settingsRes.data?.vacation_days_per_year) || 22
+                dias_base_anuales: parseInt(settingsData.vacation_days_per_year) || 22
             };
             setBalance(balanceData);
         } catch (error) {
@@ -128,7 +136,8 @@ const Vacations = () => {
             await vacationService.requestVacation({
                 start_date: newOvertime.date,
                 end_date: newOvertime.date,
-                note: `Compensación: ${newOvertime.hours} horas. ${newOvertime.note}`,
+                hours: newOvertime.hours,
+                note: newOvertime.note,
                 type: 'overtime'
             });
             setIsOvertimeModalOpen(false);
@@ -346,26 +355,44 @@ const Vacations = () => {
                                     <tr key={vacation.id} className="group hover:bg-slate-50/50 transition-all duration-300">
                                         <td className="p-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex flex-col items-center justify-center shadow-sm group-hover:border-corporate/30 group-hover:shadow-md transition-all">
+                                                <div className={`w-12 h-12 rounded-2xl bg-white border border-slate-100 flex flex-col items-center justify-center shadow-sm group-hover:border-corporate/30 group-hover:shadow-md transition-all ${vacation.tipo === 'overtime' ? 'bg-amber-50/30' : ''}`}>
                                                     <span className="text-[10px] font-black text-slate-400 uppercase">{new Date(vacation.fecha_inicio).toLocaleString('es', { month: 'short' })}</span>
-                                                    <span className="text-lg font-black text-slate-800 leading-none">{new Date(vacation.fecha_inicio).getDate()}</span>
+                                                    <span className={`text-lg font-black leading-none ${vacation.tipo === 'overtime' ? 'text-amber-600' : 'text-slate-800'}`}>{new Date(vacation.fecha_inicio).getDate()}</span>
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-slate-700">{new Date(vacation.fecha_inicio).toLocaleDateString()}</span>
-                                                        <i className="fa-solid fa-arrow-right text-[10px] text-slate-300"></i>
-                                                        <span className="font-bold text-slate-700">{new Date(vacation.fecha_fin).toLocaleDateString()}</span>
+                                                        {vacation.tipo === 'overtime' ? (
+                                                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Horas Extra</span>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-slate-700">{new Date(vacation.fecha_inicio).toLocaleDateString()}</span>
+                                                                <i className="fa-solid fa-arrow-right text-[10px] text-slate-300"></i>
+                                                                <span className="font-bold text-slate-700">{new Date(vacation.fecha_fin).toLocaleDateString()}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     {vacation.nota && (
                                                         <p className="text-xs text-slate-400 font-medium italic truncate max-w-[200px]">{vacation.nota}</p>
+                                                    )}
+                                                    {vacation.tipo === 'overtime' && (
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Realizadas el {new Date(vacation.fecha_inicio).toLocaleDateString()}</p>
                                                     )}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="p-6 text-center">
                                             <div className="inline-flex flex-col items-center">
-                                                <span className="text-lg font-black text-slate-800">{vacation.dias_solicitados}</span>
-                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Días Lab.</span>
+                                                {vacation.tipo === 'overtime' ? (
+                                                    <>
+                                                        <span className="text-lg font-black text-amber-600">{vacation.horas || 0}</span>
+                                                        <span className="text-[9px] font-black text-amber-400 uppercase tracking-tighter">Horas Extra</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-lg font-black text-slate-800">{vacation.dias_solicitados}</span>
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Días Lab.</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="p-6">
@@ -381,7 +408,9 @@ const Vacations = () => {
                                         </td>
                                         <td className="p-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                {(vacation.estado === 'pending' || vacation.estado === 'approved') && (
+                                                {/* El botón de cancelar solo sale si está pendiente/aprobada y NO ha pasado la fecha (o si eres admin) */}
+                                                {(vacation.estado === 'pending' || vacation.estado === 'approved') && 
+                                                 (new Date(vacation.fecha_inicio) > new Date() || isHrOrAdmin) && (
                                                     <button
                                                         onClick={() => handleCancelVacation(vacation.id)}
                                                         className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm border border-amber-100 hover:scale-110"

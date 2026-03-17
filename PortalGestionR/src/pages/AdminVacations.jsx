@@ -40,8 +40,10 @@ const AdminVacations = () => {
         try {
             if (type === 'approve') {
                 await vacationService.approveVacation(id, message);
-            } else {
+            } else if (type === 'reject') {
                 await vacationService.rejectVacation(id, message);
+            } else if (type === 'cancel') {
+                await vacationService.cancelVacation(id, message);
             }
             await fetchAllVacations();
         } catch (error) {
@@ -65,7 +67,8 @@ const AdminVacations = () => {
         const fullName = `${v.empleado?.nombre || ''} ${v.empleado?.apellidos || ''}`.toLowerCase();
         return (
             fullName.includes(searchLower) ||
-            (v.estado && v.estado.toLowerCase().includes(searchLower))
+            (v.estado && v.estado.toLowerCase().includes(searchLower)) ||
+            (v.tipo && v.tipo.toLowerCase().includes(searchLower))
         );
     });
 
@@ -73,8 +76,11 @@ const AdminVacations = () => {
         let aValue, bValue;
 
         if (sortKey === 'empleado') {
-            aValue = a.empleado?.nombre?.toLowerCase() || '';
-            bValue = b.empleado?.nombre?.toLowerCase() || '';
+            aValue = `${a.empleado?.nombre || ''} ${a.empleado?.apellidos || ''}`.toLowerCase();
+            bValue = `${b.empleado?.nombre || ''} ${b.empleado?.apellidos || ''}`.toLowerCase();
+        } else if (sortKey === 'tipo') {
+            aValue = a.tipo === 'overtime' ? 'horas extra' : 'vacaciones';
+            bValue = b.tipo === 'overtime' ? 'horas extra' : 'vacaciones';
         } else {
             aValue = a[sortKey];
             bValue = b[sortKey];
@@ -169,6 +175,9 @@ const AdminVacations = () => {
                                 <th className="p-4 font-bold cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('fecha_inicio')}>
                                     Fechas {sortKey === 'fecha_inicio' && (sortDirection === 'asc' ? '↑' : '↓')}
                                 </th>
+                                <th className="p-4 font-bold cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('tipo')}>
+                                    Tipo {sortKey === 'tipo' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                </th>
                                 <th className="p-4 font-bold text-center cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('dias_solicitados')}>
                                     Días {sortKey === 'dias_solicitados' && (sortDirection === 'asc' ? '↑' : '↓')}
                                 </th>
@@ -197,9 +206,30 @@ const AdminVacations = () => {
                                         )}
                                     </td>
                                     <td className="p-4 text-sm font-semibold text-gray-600">
-                                        {vacation.fecha_inicio} <span className="text-gray-400 font-normal">al</span> {vacation.fecha_fin}
+                                        <div className="flex flex-col">
+                                            <span>{vacation.fecha_inicio}</span>
+                                            <span className="text-[10px] text-gray-400 font-normal">hasta {vacation.fecha_fin}</span>
+                                        </div>
                                     </td>
-                                    <td className="p-4 text-center font-bold text-corporate">{vacation.dias_solicitados || '-'}</td>
+                                    <td className="p-4">
+                                        {vacation.tipo === 'overtime' ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100 text-[10px] font-black uppercase">
+                                                <i className="fa-solid fa-clock-rotate-left"></i>
+                                                Horas Extra
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-black uppercase">
+                                                <i className="fa-solid fa-umbelra-beach"></i>
+                                                Vacaciones
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="p-4 text-center font-bold text-corporate">
+                                        <div className="flex flex-col">
+                                            <span>{vacation.dias_solicitados || '0'}</span>
+                                            {vacation.horas && <span className="text-[10px] text-slate-400 font-medium">{vacation.horas}h</span>}
+                                        </div>
+                                    </td>
                                     <td className="p-4">{renderStatus(vacation.estado)}</td>
                                     <td className="p-4 text-right flex justify-end gap-2">
                                         {vacation.estado === 'pending' ? (
@@ -219,6 +249,14 @@ const AdminVacations = () => {
                                                     Aprobar
                                                 </button>
                                             </>
+                                        ) : vacation.estado === 'approved' ? (
+                                            <button
+                                                onClick={() => openActionModal(vacation.id, 'cancel')}
+                                                disabled={actionLoading === vacation.id}
+                                                className="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 font-bold text-xs rounded-lg transition-colors border border-amber-200"
+                                            >
+                                                Cancelar Aprobada
+                                            </button>
                                         ) : (
                                             <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Procesada</span>
                                         )}
@@ -270,9 +308,10 @@ const AdminVacations = () => {
             {actionModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 flex flex-col">
-                        <div className={"p-6 border-b border-slate-100 flex justify-between items-center " + (actionModal.type === 'approve' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800')}>
+                        <div className={"p-6 border-b border-slate-100 flex justify-between items-center " + (actionModal.type === 'approve' ? 'bg-green-50 text-green-800' : actionModal.type === 'cancel' ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-800')}>
                             <h3 className="text-xl font-bold">
-                                {actionModal.type === 'approve' ? 'Aprobar Vacaciones' : 'Rechazar Vacaciones'}
+                                {actionModal.type === 'approve' ? 'Aprobar Vacaciones' : 
+                                 actionModal.type === 'reject' ? 'Rechazar Vacaciones' : 'Anular/Cancelar Solicitud'}
                             </h3>
                             <button onClick={() => setActionModal({ ...actionModal, isOpen: false })} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/50 text-slate-500 hover:bg-white transition-colors">
                                 <i className="fa-solid fa-xmark"></i>
@@ -294,7 +333,7 @@ const AdminVacations = () => {
                                 </button>
                                 <button
                                     onClick={confirmAction}
-                                    className={"px-5 py-2.5 rounded-xl font-bold text-white transition-colors shadow-md " + (actionModal.type === 'approve' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600')}
+                                    className={"px-5 py-2.5 rounded-xl font-bold text-white transition-colors shadow-md " + (actionModal.type === 'approve' ? 'bg-green-500 hover:bg-green-600' : actionModal.type === 'cancel' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-red-500 hover:bg-red-600')}
                                 >
                                     Confirmar
                                 </button>

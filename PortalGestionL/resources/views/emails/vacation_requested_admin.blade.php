@@ -1,7 +1,7 @@
 <x-mail::message>
-# Nueva Solicitud de Vacaciones
+# {{ $vacation->type === 'overtime' ? 'Nueva Solicitud de Horas Extra' : 'Nueva Solicitud de Vacaciones' }}
 
-Hola, Admin. Se ha registrado una nueva solicitud de vacaciones en el portal.
+Hola, Admin. Se ha registrado una nueva solicitud de {{ $vacation->type === 'overtime' ? 'compensación por horas extra' : 'vacaciones' }} en el portal.
 
 **Empleado:** {{ $vacation->user->full_name }}
 **Desde:** {{ \Carbon\Carbon::parse($vacation->start_date)->format('d/m/Y') }}

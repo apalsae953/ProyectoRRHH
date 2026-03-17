@@ -92,6 +92,7 @@ Route::prefix('v1')->group(function () {
 
         // --- CALENDARIO LABORAL (Festivos) ---
         // Usamos solo los métodos index, store y destroy
+        Route::post('/holidays/bulk-delete', [HolidayDateController::class, 'bulkDestroy']);
         Route::apiResource('holidays', HolidayDateController::class)->only(['index', 'store', 'destroy']);
 
         // --- CONFIGURACIÓN GLOBAL ---

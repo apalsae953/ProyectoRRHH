@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from '../api/axios';
+import { maskDni } from '../utils/formatters';
 
 const Profile = () => {
     const { user, login } = useAuth();
@@ -149,6 +150,8 @@ const Profile = () => {
                         </div>
                         <h3 className="text-xl font-bold text-slate-800">{user?.name} {user?.surname}</h3>
                         <p className="text-sm font-medium text-slate-500 mt-1">{user?.email}</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">DNI</p>
+                        <p className="text-sm font-bold text-slate-700">{maskDni(user?.dni)}</p>
                         <div className="mt-4 px-4 py-1.5 bg-corporate/10 text-corporate font-bold text-sm rounded-full">
                             {displayRole}
                         </div>

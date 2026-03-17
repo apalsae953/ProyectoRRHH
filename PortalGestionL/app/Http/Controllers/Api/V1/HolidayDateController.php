@@ -57,4 +57,21 @@ class HolidayDateController extends Controller
 
         return response()->json(['message' => 'Día festivo eliminado del calendario correctamente.']);
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        if (!$request->user()->hasRole(['admin', 'hr_director'])) {
+            return response()->json(['message' => 'Acceso denegado.'], 403);
+        }
+
+        $ids = $request->input('ids', []);
+        
+        if (empty($ids)) {
+            return response()->json(['message' => 'No hay IDs seleccionados.'], 422);
+        }
+
+        HolidayDate::whereIn('id', $ids)->delete();
+
+        return response()->json(['message' => count($ids) . ' festivos eliminados correctamente.']);
+    }
 }

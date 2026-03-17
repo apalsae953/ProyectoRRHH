@@ -20,6 +20,7 @@ class StoreVacationRequest extends FormRequest
             // La fecha de fin debe ser igual o posterior a la de inicio
             'end_date' => 'required|date|after_or_equal:start_date',
             'note' => 'nullable|string|max:500',
+            'type' => 'sometimes|string|in:vacation,overtime,sick_leave,other',
         ];
     }
 

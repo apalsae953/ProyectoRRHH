@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from '../api/axios';
+import { maskDni } from '../utils/formatters';
+
 import employeeService from '../services/employeeService';
 import documentService from '../services/documentService';
 import { useAuth } from '../context/AuthContext';
@@ -248,21 +250,32 @@ const Employees = () => {
     const sortedEmployees = [...filteredEmployees].sort((a, b) => {
         if (!sortConfig.key) return 0;
 
-        let aValue = a[sortConfig.key] || '';
-        let bValue = b[sortConfig.key] || '';
-
-        // Casos especiales (unir nombre y apellido para ordenar)
-        if (sortConfig.key === 'nombre') {
-            aValue = (a.nombre + ' ' + a.apellidos).toLowerCase();
-            bValue = (b.nombre + ' ' + b.apellidos).toLowerCase();
-        } else if (sortConfig.key === 'estado') {
-            aValue = a.estado || 'active';
-            bValue = b.estado || 'active';
+        let res = 0;
+        switch (sortConfig.key) {
+            case 'nombre':
+                res = (a.nombre + ' ' + a.apellidos).localeCompare(b.nombre + ' ' + b.apellidos, 'es', { sensitivity: 'base' });
+                break;
+            case 'puesto':
+                // Ordenamos por nombre de puesto y secundariamente por departamento
+                const posA = a.puesto?.nombre || '';
+                const posB = b.puesto?.nombre || '';
+                res = posA.localeCompare(posB, 'es', { sensitivity: 'base' });
+                if (res === 0) {
+                    const deptA = a.departamento?.nombre || '';
+                    const deptB = b.departamento?.nombre || '';
+                    res = deptA.localeCompare(deptB, 'es', { sensitivity: 'base' });
+                }
+                break;
+            case 'estado':
+                res = (a.estado || 'active').localeCompare(b.estado || 'active');
+                break;
+            default:
+                const valA = String(a[sortConfig.key] || '');
+                const valB = String(b[sortConfig.key] || '');
+                res = valA.localeCompare(valB, 'es', { sensitivity: 'base', numeric: true });
         }
 
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
+        return sortConfig.direction === 'asc' ? res : -res;
     });
 
     // Paginación: Extracción del segmento a renderizar
@@ -284,9 +297,9 @@ const Employees = () => {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50/30">
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden mb-10">
-                <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="min-h-screen bg-slate-100/30">
+            <div className="bg-white rounded-3xl shadow-xl border border-slate-300 overflow-hidden mb-10">
+                <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-300 bg-slate-100/50">
                     <div>
                         <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Directorio de Empleados</h2>
                         <p className="text-slate-500 text-sm mt-1 font-medium">Gestiona tu equipo y consulta información de contacto.</p>
@@ -347,7 +360,7 @@ const Employees = () => {
                         </thead>
                         <tbody className="text-sm">
                             {currentEmployees.map((emp) => (
-                                <tr key={emp.id} className="bg-white shadow-[0_0_15px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 rounded-2xl group border border-slate-50">
+                                <tr key={emp.id} className="bg-white shadow-[0_4px_15px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 rounded-2xl group border border-slate-200">
                                     <td className="p-4 rounded-l-2xl border-t border-b border-l border-slate-100 group-hover:border-corporate/20 transition-colors">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-xl bg-corporate text-white font-bold flex items-center justify-center shrink-0 border border-corporate/20 overflow-hidden shadow-sm">
@@ -364,7 +377,7 @@ const Employees = () => {
                                         </div>
                                     </td>
                                     <td className="p-4 font-mono font-medium text-slate-600 hidden md:table-cell border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
-                                        {emp.dni}
+                                        {maskDni(emp.dni)}
                                     </td>
                                     <td className="p-4 font-medium text-slate-600 hidden sm:table-cell border-t border-b border-slate-100 group-hover:border-corporate/20 transition-colors">
                                         <div>{emp.puesto?.nombre || 'Sin puesto'}</div>

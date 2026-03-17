@@ -5,10 +5,10 @@
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-top: 4px solid #0056b3; border-radius: 5px;">
-        <h2 style="color: #0056b3;">Resolución de solicitud de vacaciones</h2>
+        <h2 style="color: #0056b3;">Resolución de solicitud de {{ $vacation->type === 'overtime' ? 'horas extra' : 'vacaciones' }}</h2>
         
         <p>Hola {{ $vacation->user->name }},</p>
-        <p>Tu solicitud de vacaciones del <strong>{{ $vacation->start_date->format('d/m/Y') }}</strong> al <strong>{{ $vacation->end_date->format('d/m/Y') }}</strong> ha sido actualizada.</p>
+        <p>Tu solicitud de {{ $vacation->type === 'overtime' ? 'compensación por horas extra' : 'vacaciones' }} del <strong>{{ $vacation->start_date->format('d/m/Y') }}</strong> al <strong>{{ $vacation->end_date->format('d/m/Y') }}</strong> ha sido actualizada.</p>
         
         <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <p style="margin: 0; font-size: 16px;">
