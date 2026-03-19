@@ -108,7 +108,7 @@ const AdminVacations = () => {
             pending: 'bg-amber-100 text-amber-700 border-amber-200',
             approved: 'bg-green-100 text-green-700 border-green-200',
             rejected: 'bg-red-100 text-red-700 border-red-200',
-            canceled: 'bg-gray-100 text-gray-700 border-gray-200',
+            canceled: 'bg-orange-100 text-orange-700 border-orange-200',
         };
         const labels = {
             pending: { text: 'Pendiente', icon: 'fa-regular fa-clock' },
@@ -198,12 +198,18 @@ const AdminVacations = () => {
                                                 {vacation.nota}
                                             </p>
                                         )}
-                                        {vacation.mensaje_admin && (
-                                            <p className={"text-xs italic mt-1 font-medium p-2 rounded-lg break-words " + (vacation.estado === 'approved' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
-                                                <i className="fa-solid fa-reply mr-1 opacity-50"></i>
-                                                {vacation.mensaje_admin}
-                                            </p>
-                                        )}
+                                        {vacation.mensaje_admin && vacation.estado !== 'canceled' && (
+                                             <p className={"text-xs italic mt-1 font-medium p-2 rounded-lg break-words " + (vacation.estado === 'approved' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
+                                                 <i className="fa-solid fa-reply mr-1 opacity-50"></i>
+                                                 {vacation.mensaje_admin}
+                                             </p>
+                                         )}
+                                         {vacation.motivo_cancelacion && (
+                                             <p className="text-xs italic mt-1 font-medium p-2 rounded-lg break-words bg-slate-100 text-slate-600 border border-slate-200">
+                                                 <i className="fa-solid fa-ban mr-1 opacity-50"></i>
+                                                 Motivo anulación: {vacation.motivo_cancelacion}
+                                             </p>
+                                         )}
                                     </td>
                                     <td className="p-4 text-sm font-semibold text-gray-600">
                                         <div className="flex flex-col">

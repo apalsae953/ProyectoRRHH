@@ -85,28 +85,31 @@ class DocumentController extends Controller
     {
         $user = $request->user();
 
-        // Validar que es su propio documento o es RRHH/Admin
-        if ($document->user_id !== $user->id && !$user->hasRole(['admin', 'hr_director'])) {
-            return response()->json(['message' => 'Acceso denegado'], 403);
-        }
+        // Si hay una sesión de usuario, validamos que tenga permisos
+        if ($user) {
+            // Validar que es su propio documento o es RRHH/Admin
+            if ($document->user_id !== $user->id && !$user->hasRole(['admin', 'hr_director'])) {
+                return response()->json(['message' => 'Acceso denegado'], 403);
+            }
+        } 
+        // Si no hay usuario, el middleware 'signed' en api.php ya ha validado que la URL es auténtica y temporal
 
         if (!Storage::exists($document->path)) {
             return response()->json(['message' => 'Archivo no encontrado'], 404);
         }
 
         // Descarga directa del archivo privado
-        // Determinar extensión basándonos en el mime type
         $extension = 'pdf';
-        if (str_contains($document->mime, 'image/jpeg')) $extension = 'jpg';
-        elseif (str_contains($document->mime, 'image/png')) $extension = 'png';
+        if (str_contains($document->mime ?? '', 'image/jpeg')) $extension = 'jpg';
+        elseif (str_contains($document->mime ?? '', 'image/png')) $extension = 'png';
 
         // Registrar la descarga en el log de auditoría
         activity()
             ->performedOn($document)
-            ->causedBy($user)
-            ->log('Descarga de documento');
+            ->causedBy($user ?: $document->user) // Si no hay usuario logueado en la sesión (URL firmada), atribuimos al dueño o indicamos que fue via link
+            ->log($user ? 'Descarga de documento' : 'Descarga vía URL firmada');
 
-        return Storage::download($document->path, $document->title . '.' . $extension);
+        return Storage::response($document->path, $document->title . '.' . $extension);
     }
 
     public function update(Request $request, Document $document)

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import ModalPortal from '../components/ModalPortal';
 
 const TeamCalendar = () => {
     const { user } = useAuth();
@@ -96,9 +97,9 @@ const TeamCalendar = () => {
     if (loading) return <div className="p-10 text-center text-slate-400 font-bold">Cargando calendario...</div>;
 
     return (
-        <div className="animate-fade-in pb-10">
+        <div className="animate-fade-in pb-2">
             <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
-                <div className="p-6 md:p-8 flex items-center justify-between border-b border-slate-100 bg-slate-50">
+                <div className="p-4 md:p-5 flex items-center justify-between border-b border-slate-100 bg-slate-50">
                     <div>
                         <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Calendario de Equipo</h2>
                         <p className="text-slate-500 text-sm mt-1 font-medium">Visualiza festivos y vacaciones aprobadas de toda la empresa.</p>
@@ -127,14 +128,14 @@ const TeamCalendar = () => {
                     </div>
                 </div>
 
-                <div className="p-4 md:p-8">
-                    <div className="grid grid-cols-7 gap-2">
+                <div className="p-2 md:p-4">
+                    <div className="grid grid-cols-7 gap-1">
                         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
                             <div key={d} className="text-center text-[10px] font-black uppercase text-slate-400 tracking-tighter pb-2">{d}</div>
                         ))}
 
                         {Array.from({ length: startDay }).map((_, i) => (
-                            <div key={`empty-${i}`} className="h-24 md:h-32 bg-slate-50/30 rounded-2xl border border-transparent"></div>
+                            <div key={`empty-${i}`} className="h-20 md:h-24 bg-slate-50/30 rounded-2xl border border-transparent"></div>
                         ))}
 
                         {Array.from({ length: totalDays }).map((_, i) => {
@@ -144,7 +145,7 @@ const TeamCalendar = () => {
                             const isWeekend = (startDay + i) % 7 >= 5;
 
                             return (
-                                <div key={day} className={`h-24 md:h-32 rounded-2xl border transition-all p-2 flex flex-col gap-1 overflow-y-auto custom-scrollbar ${isWeekend ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100 hover:border-corporate/30 hover:shadow-md'}`}>
+                                <div key={day} className={`h-20 md:h-24 rounded-2xl border transition-all p-1.5 flex flex-col gap-1 overflow-hidden ${isWeekend ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100 hover:border-corporate/30 hover:shadow-md'}`}>
                                     <span className={`text-xs font-bold ${isWeekend ? 'text-slate-400' : 'text-slate-700'}`}>{day}</span>
 
                                     {dayHolidays.map(h => (
@@ -179,8 +180,9 @@ const TeamCalendar = () => {
 
             {/* Modal de Nuevo Festivo */}
             {isHolidayModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-scale-up">
+                <ModalPortal>
+                    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-scale-up">
                         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
                                 <h3 className="text-xl font-black text-slate-800 tracking-tight">Configurar Festivo</h3>
@@ -240,9 +242,10 @@ const TeamCalendar = () => {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
-    );
+            </ModalPortal>
+        )}
+    </div>
+);
 };
 
 export default TeamCalendar;

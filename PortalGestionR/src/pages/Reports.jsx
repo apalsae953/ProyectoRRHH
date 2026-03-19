@@ -208,50 +208,65 @@ const Reports = () => {
                 <>
                     {/* VISTA DE REPORTES */}
                     {activeTab === 'reports' && reportData && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 
                             {/* Card de Empleados */}
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-3">
                                     <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><i className="fa-solid fa-users text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full">Empleados</span>
+                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-full">Empleados</span>
                                 </div>
-                                <h4 className="text-3xl font-black text-slate-800">{reportData.employees.total}</h4>
-                                <p className="text-sm text-slate-500 font-medium mt-1">Activos: <span className="text-emerald-500 font-bold">{reportData.employees.active}</span></p>
+                                <h4 className="text-2xl font-black text-slate-800">{reportData.employees.total}</h4>
+                                <p className="text-[11px] text-slate-500 font-medium mt-1">Activos: <span className="text-emerald-500 font-bold">{reportData.employees.active}</span></p>
                             </div>
 
                             {/* Card de Documentos */}
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-3">
                                     <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><i className="fa-solid fa-file-invoice text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full">Documentos</span>
+                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full">Documentos</span>
                                 </div>
-                                <h4 className="text-3xl font-black text-slate-800">{reportData.documents.total}</h4>
-                                <p className="text-sm text-slate-500 font-medium mt-1">Nóminas subidas: <span className="text-slate-700 font-bold">{reportData.documents.by_type.payroll}</span></p>
+                                <h4 className="text-2xl font-black text-slate-800">{reportData.documents.total}</h4>
+                                <p className="text-[11px] text-slate-500 font-medium mt-1">Nóminas: <span className="text-slate-700 font-bold">{reportData.documents.by_type.payroll}</span></p>
                             </div>
 
                             {/* Card de Vacaciones */}
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-3">
                                     <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl"><i className="fa-solid fa-plane-departure text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-amber-50 text-amber-700 font-bold text-xs rounded-full">Vacaciones</span>
+                                    <span className="px-3 py-1 bg-amber-50 text-amber-700 font-bold text-[10px] rounded-full">Vacaciones</span>
                                 </div>
-                                <h4 className="text-3xl font-black text-slate-800">{reportData.vacations.approved}</h4>
-                                <p className="text-sm text-slate-500 font-medium mt-1">Solicitudes Pendientes: <span className="text-amber-500 font-bold">{reportData.vacations.pending}</span></p>
+                                <h4 className="text-2xl font-black text-slate-800">{reportData.vacations.approved}</h4>
+                                <p className="text-[11px] text-slate-500 font-medium mt-1">Pendientes: <span className="text-amber-500 font-bold">{reportData.vacations.pending}</span></p>
                             </div>
 
-                            {/* Card de Empleados nuevos */}
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
+                            {/* Card de Horas Extra */}
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl"><i className="fa-solid fa-clock-rotate-left text-xl"></i></div>
+                                    <span className="px-3 py-1 bg-orange-50 text-orange-700 font-bold text-[10px] rounded-full">Horas Extra</span>
+                                </div>
+                                <h4 className="text-2xl font-black text-slate-800">{reportData.overtime?.total_approved || 0}</h4>
+                                <div className="space-y-0.5 mt-1">
+                                    <p className="text-[11px] text-slate-500 font-medium">Horas totales: <span className="text-emerald-600 font-bold">{reportData.overtime?.total_hours || 0}h</span></p>
+                                    <p className="text-[11px] text-slate-500 font-medium">Pendientes: <span className="text-orange-600 font-bold">{reportData.overtime?.pending || 0}</span></p>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-3">
                                     <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl"><i className="fa-solid fa-user-plus text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-purple-50 text-purple-700 font-bold text-xs rounded-full">Nuevos</span>
+                                    <span className="px-3 py-1 bg-purple-50 text-purple-700 font-bold text-[10px] rounded-full">Nuevos Emp.</span>
                                 </div>
-                                <h4 className="text-3xl font-black text-slate-800">{reportData.employees.recent_hires_6m}</h4>
-                                <p className="text-sm text-slate-500 font-medium mt-1">Contrataciones (últimos 6 meses)</p>
+                                <h4 className="text-2xl font-black text-slate-800">{reportData.employees.recent_hires_6m}</h4>
+                                <p className="text-[11px] text-slate-500 font-medium mt-1">Últimos 6 meses</p>
                             </div>
+                        </div>
 
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                             {/* SECCIÓN DOCUMENTOS POR TIPO */}
-                            <div className="col-span-1 md:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
                                 <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                                     <i className="fa-solid fa-chart-bar text-corporate"></i> Desglose de Documentos
                                 </h3>
@@ -281,7 +296,7 @@ const Reports = () => {
                             </div>
 
                             {/* SECCIÓN ESTADO VACACIONES */}
-                            <div className="col-span-1 md:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
                                 <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                                     <i className="fa-solid fa-calendar-check text-corporate"></i> Solicitudes Vacacionales ({new Date().getFullYear()})
                                 </h3>
@@ -320,6 +335,7 @@ const Reports = () => {
                                 </div>
                             </div>
                         </div>
+                        </>
                     )}
 
                     {/* VISTA DE AUDITORÍA LOGS */}

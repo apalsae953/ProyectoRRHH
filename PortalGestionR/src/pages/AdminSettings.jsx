@@ -10,7 +10,7 @@ const AdminSettings = () => {
 
     const [newDepartmentName, setNewDepartmentName] = useState('');
     const [newPositionName, setNewPositionName] = useState('');
-    const [newHoliday, setNewHoliday] = useState({ date: '', date_end: '', description: '', scope: 'national' });
+    const [newHoliday, setNewHoliday] = useState({ date: '', date_end: '', description: '', scope: 'national', center_id: null });
 
     // Políticas Globales
     const [settings, setSettings] = useState({
@@ -113,7 +113,7 @@ const AdminSettings = () => {
         try {
             await axios.post('/api/v1/holidays', newHoliday);
             setSuccess('Festivos añadidos correctamente.');
-            setNewHoliday({ date: '', date_end: '', description: '', scope: 'national' });
+            setNewHoliday({ date: '', date_end: '', description: '', scope: 'national', center_id: null });
             setSelectedHolidays([]); // Limpiar selección al recargar
             fetchData();
         } catch (err) {
@@ -329,7 +329,7 @@ const AdminSettings = () => {
                 <div className="p-6 md:p-8">
                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-6 italic">Nota: Los periodos aquí marcados son inhábiles para el cálculo de vacaciones.</p>
 
-                    <form onSubmit={handleAddHoliday} className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <form onSubmit={handleAddHoliday} className="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
                         <div className="sm:col-span-1">
                             <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Desde</label>
                             <input
@@ -349,19 +349,30 @@ const AdminSettings = () => {
                             />
                         </div>
                         <div className="sm:col-span-1">
-                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Descripción / Motivo</label>
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Descripción</label>
                             <input
                                 type="text" required
                                 value={newHoliday.description}
                                 onChange={(e) => setNewHoliday({ ...newHoliday, description: e.target.value })}
                                 className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-corporate/20 focus:border-corporate outline-none bg-white font-medium shadow-sm transition-all"
-                                placeholder="Ej: Semana Santa..."
+                                placeholder="Ej: Festivo Local..."
                             />
+                        </div>
+                        <div className="sm:col-span-1">
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Ámbito</label>
+                            <select
+                                value={newHoliday.scope}
+                                onChange={(e) => setNewHoliday({ ...newHoliday, scope: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-corporate/20 focus:border-corporate outline-none bg-white font-medium shadow-sm transition-all"
+                            >
+                                <option value="national">Nacional</option>
+                                <option value="center">Local / Centro</option>
+                            </select>
                         </div>
                         <div className="sm:col-span-1 flex items-end">
                             <button type="submit" className="w-full h-[42px] bg-corporate text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-corporate-dark transition-all shadow-lg shadow-corporate/10 flex items-center justify-center gap-2 active:scale-[0.98]">
                                 <i className="fa-solid fa-calendar-plus"></i>
-                                Guardar Periodo
+                                Guardar
                             </button>
                         </div>
                     </form>
@@ -387,7 +398,9 @@ const AdminSettings = () => {
                                         </div>
                                         <div className="min-w-0">
                                             <p className="font-bold text-slate-700 text-sm truncate">{h.description}</p>
-                                            <p className="text-[10px] text-slate-400 font-medium truncate">Festivo {h.scope === 'national' ? 'Nacional' : 'Local'}</p>
+                                            <span className={`text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md border ${h.scope === 'national' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
+                                                {h.scope === 'national' ? 'Nacional' : 'Local / Centro'}
+                                            </span>
                                         </div>
                                     </div>
                                     <button onClick={() => handleDeleteHoliday(h.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110 ml-2">

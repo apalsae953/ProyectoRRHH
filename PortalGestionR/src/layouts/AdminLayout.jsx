@@ -133,7 +133,7 @@ const AdminLayout = () => {
                 </header>
 
                 {/* CONTENEDOR DE LA PÁGINA */}
-                <div className="flex-1 overflow-auto p-6 md:p-10 scroll-smooth">
+                <div className={`flex-1 ${location.pathname === '/calendario' ? 'overflow-hidden' : 'overflow-auto'} p-6 md:p-10 scroll-smooth`}>
                     <div className="max-w-7xl mx-auto w-full">
                         <Outlet />
                     </div>

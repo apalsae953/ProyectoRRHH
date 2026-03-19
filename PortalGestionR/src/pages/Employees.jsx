@@ -5,6 +5,7 @@ import { maskDni } from '../utils/formatters';
 import employeeService from '../services/employeeService';
 import documentService from '../services/documentService';
 import { useAuth } from '../context/AuthContext';
+import ModalPortal from '../components/ModalPortal';
 
 const Employees = () => {
     const { user } = useAuth();
@@ -472,107 +473,110 @@ const Employees = () => {
 
                 {/* Modal para añadir empleado */}
                 {isAddModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                <h3 className="text-xl font-bold text-slate-800">Añadir Nuevo Empleado</h3>
-                                <button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
-                                    <i className="fa-solid fa-xmark"></i>
-                                </button>
-                            </div>
-                            <div className="p-6 overflow-y-auto custom-scrollbar">
-                                {formError && (
-                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
-                                        <i className="fa-solid fa-circle-exclamation mr-2"></i>
-                                        {formError}
-                                    </div>
-                                )}
-                                <form onSubmit={handleAddEmployee} className="space-y-5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Nombre</label>
-                                            <input type="text" required value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. Ana" />
+                    <ModalPortal>
+                        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fade-in">
+                            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="text-xl font-bold text-slate-800">Añadir Nuevo Empleado</h3>
+                                    <button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
+                                        <i className="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div className="p-6 overflow-y-auto custom-scrollbar">
+                                    {formError && (
+                                        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+                                            <i className="fa-solid fa-circle-exclamation mr-2"></i>
+                                            {formError}
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Apellidos</label>
-                                            <input type="text" required value={newEmployee.surname} onChange={e => setNewEmployee({ ...newEmployee, surname: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. García" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">DNI</label>
-                                            <input type="text" required value={newEmployee.dni} onChange={e => setNewEmployee({ ...newEmployee, dni: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="12345678Z" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Email</label>
-                                            <input type="email" required value={newEmployee.email} onChange={e => setNewEmployee({ ...newEmployee, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="correo@ejemplo.com" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Teléfono</label>
-                                            <input type="text" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. 600000000" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Dirección</label>
-                                            <input type="text" value={newEmployee.address} onChange={e => setNewEmployee({ ...newEmployee, address: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Dirección completa" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Puesto a desempeñar</label>
-                                            <select value={newEmployee.position_id} onChange={e => setNewEmployee({ ...newEmployee, position_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
-                                                <option value="">Selecciona un puesto...</option>
-                                                {positions.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        {isStrictAdmin && (
+                                    )}
+                                    <form onSubmit={handleAddEmployee} className="space-y-5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Rol de Sistema</label>
-                                                <select value={newEmployee.roles} onChange={e => setNewEmployee({ ...newEmployee, roles: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
-                                                    <option value="employee">Empleado Básico</option>
-                                                    <option value="hr_director">Recursos Humanos (RRHH)</option>
-                                                    <option value="admin">Administrador Total</option>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Nombre</label>
+                                                <input type="text" required value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. Ana" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Apellidos</label>
+                                                <input type="text" required value={newEmployee.surname} onChange={e => setNewEmployee({ ...newEmployee, surname: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. García" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">DNI</label>
+                                                <input type="text" required value={newEmployee.dni} onChange={e => setNewEmployee({ ...newEmployee, dni: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="12345678Z" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Email</label>
+                                                <input type="email" required value={newEmployee.email} onChange={e => setNewEmployee({ ...newEmployee, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="correo@ejemplo.com" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Teléfono</label>
+                                                <input type="text" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Ej. 600000000" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Dirección</label>
+                                                <input type="text" value={newEmployee.address} onChange={e => setNewEmployee({ ...newEmployee, address: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" placeholder="Dirección completa" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Puesto a desempeñar</label>
+                                                <select value={newEmployee.position_id} onChange={e => setNewEmployee({ ...newEmployee, position_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                                    <option value="">Selecciona un puesto...</option>
+                                                    {positions.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                    ))}
                                                 </select>
                                             </div>
-                                        )}
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Departamento</label>
-                                            <select value={newEmployee.department_id} onChange={e => setNewEmployee({ ...newEmployee, department_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
-                                                <option value="">Selecciona un departamento...</option>
-                                                {departments.map(d => (
-                                                    <option key={d.id} value={d.id}>{d.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha de Contratación</label>
-                                            <input type="date" required value={newEmployee.hired_at} onChange={e => setNewEmployee({ ...newEmployee, hired_at: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-1.5">Fin Periodo de Prueba (Opcional)</label>
-                                            <input type="date" value={newEmployee.probation_until} onChange={e => setNewEmployee({ ...newEmployee, probation_until: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
-                                            <span className="text-[10px] text-slate-400 font-medium">Si se deja vacío, se aplicará la política global ({globalSettings?.probation_months_default || 6} meses).</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
-                                        <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-                                            Cancelar
-                                        </button>
-                                        <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl font-bold bg-corporate hover:bg-corporate-dark text-white transition-colors shadow-md flex items-center gap-2 disabled:opacity-70">
-                                            {isSubmitting ? (
-                                                <><i className="fa-solid fa-spinner fa-spin"></i> Guardando...</>
-                                            ) : (
-                                                <><i className="fa-solid fa-check"></i> Dar de Alta</>
+                                            {isStrictAdmin && (
+                                                <div>
+                                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Rol de Sistema</label>
+                                                    <select value={newEmployee.roles} onChange={e => setNewEmployee({ ...newEmployee, roles: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                                        <option value="employee">Empleado Básico</option>
+                                                        <option value="hr_director">Recursos Humanos (RRHH)</option>
+                                                        <option value="admin">Administrador Total</option>
+                                                    </select>
+                                                </div>
                                             )}
-                                        </button>
-                                    </div>
-                                </form>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Departamento</label>
+                                                <select value={newEmployee.department_id} onChange={e => setNewEmployee({ ...newEmployee, department_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all">
+                                                    <option value="">Selecciona un departamento...</option>
+                                                    {departments.map(d => (
+                                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha de Contratación</label>
+                                                <input type="date" required value={newEmployee.hired_at} onChange={e => setNewEmployee({ ...newEmployee, hired_at: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-1.5">Fin Periodo de Prueba (Opcional)</label>
+                                                <input type="date" value={newEmployee.probation_until} onChange={e => setNewEmployee({ ...newEmployee, probation_until: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-corporate focus:ring-2 focus:ring-corporate/20 outline-none transition-all" />
+                                                <span className="text-[10px] text-slate-400 font-medium">Si se deja vacío, se aplicará la política global ({globalSettings?.probation_months_default || 6} meses).</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
+                                            <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+                                                Cancelar
+                                            </button>
+                                            <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl font-bold bg-corporate hover:bg-corporate-dark text-white transition-colors shadow-md flex items-center gap-2 disabled:opacity-70">
+                                                {isSubmitting ? (
+                                                    <><i className="fa-solid fa-spinner fa-spin"></i> Guardando...</>
+                                                ) : (
+                                                    <><i className="fa-solid fa-check"></i> Dar de Alta</>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </ModalPortal>
                 )}
                 {/* Modal para editar empleado */}
                 {isEditModalOpen && editingEmployee && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+                    <ModalPortal>
+                        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fade-in">
+                            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                                 <h3 className="text-xl font-bold text-slate-800">Editar Empleado: {editingEmployee.name}</h3>
                                 <button onClick={() => setIsEditModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
@@ -662,12 +666,14 @@ const Employees = () => {
                             </div>
                         </div>
                     </div>
+                </ModalPortal>
                 )}
 
                 {/* Modal para gestionar DOCUMENTOS del empleado (Rediseño Premium) */}
                 {isDocsModalOpen && selectedEmployeeForDocs && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl overflow-hidden border border-white/20 flex flex-col h-[85vh] transition-all duration-500 scale-100">
+                    <ModalPortal>
+                        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl overflow-hidden border border-white/20 flex flex-col h-[85vh] transition-all duration-500 scale-100">
                             {/* Cabecera Premium */}
                             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-corporate opacity-[0.03] rounded-full translate-x-12 -translate-y-12"></div>
@@ -962,6 +968,7 @@ const Employees = () => {
                             </div>
                         </div>
                     </div>
+                </ModalPortal>
                 )}
             </div>
         </div>

@@ -31,20 +31,30 @@ class ReportController extends Controller
         // Estadisticas de Vacaciones/Ausencias en el año actual
         $currentYear = Carbon::now()->year;
         
-        // Asumiendo que las solicitudes de tipo 'vacation' son vacaciones estandar
-        $vacations = Vacation::whereYear('start_date', $currentYear)->get();
+        // Estadísticas de Vacaciones (solo tipo 'vacation')
+        $vacations = Vacation::whereYear('start_date', $currentYear)
+                            ->where('type', 'vacation')
+                            ->get();
         
         $pendingVacations = $vacations->where('status', 'pending')->count();
         $approvedVacations = $vacations->where('status', 'approved')->count();
         $rejectedVacations = $vacations->where('status', 'rejected')->count();
         $canceledVacations = $vacations->where('status', 'canceled')->count();
 
-        // Tipos de ausencias comprobando aquellos cuyo campo type pueda ser distinto (si implementado)
-        // Por simplificar, reportaremos el ratio de días aprobados mes a mes
+        // Estadísticas de Horas Extra (solo tipo 'overtime')
+        $overtime = Vacation::whereYear('start_date', $currentYear)
+                            ->where('type', 'overtime')
+                            ->get();
+        
+        $pendingOvertime = $overtime->where('status', 'pending')->count();
+        $approvedOvertime = $overtime->where('status', 'approved')->count();
+
+        // Días de vacaciones aprobados mes a mes
         $vacationsByMonth = [];
         for ($i = 1; $i <= 12; $i++) {
             $vacationsByMonth[$i] = Vacation::whereYear('start_date', $currentYear)
                                             ->whereMonth('start_date', $i)
+                                            ->where('type', 'vacation')
                                             ->where('status', 'approved')
                                             ->sum('days');
         }
@@ -71,6 +81,11 @@ class ReportController extends Controller
                 'rejected' => $rejectedVacations,
                 'canceled' => $canceledVacations,
                 'approved_days_by_month' => $vacationsByMonth,
+            ],
+            'overtime' => [
+                'total_approved' => $approvedOvertime,
+                'pending' => $pendingOvertime,
+                'total_hours' => $overtime->where('status', 'approved')->sum('hours'),
             ],
             'documents' => [
                 'total' => $totalDocuments,

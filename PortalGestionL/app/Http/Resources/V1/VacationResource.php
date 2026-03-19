@@ -20,6 +20,7 @@ class VacationResource extends JsonResource
             'nota' => $this->note,
             'motivo_cancelacion' => $this->cancel_reason,
             'mensaje_admin' => $this->admin_message,
+            'adjunto' => $this->attachment_path ? asset('storage/' . $this->attachment_path) : null,
             'fecha_solicitud' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             
             // Quién la aprobó (si ya fue aprobada)

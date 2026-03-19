@@ -164,6 +164,14 @@ class VacationController extends Controller
             }
         }
 
+        // --- GESTIÓN DE ADJUNTOS ---
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $attachmentPath = $file->storeAs('vacation_attachments/' . $user->id, $fileName, 'public');
+        }
+
         // --- CREACIÓN ---
         $vacation = Vacation::create([
             'user_id' => $user->id,
@@ -172,15 +180,18 @@ class VacationController extends Controller
             'type' => $type,
             'days' => $daysRequested,
             'hours' => $hours,
-            'status' => 'pending', 
+            'status' => $request->input('status', 'pending'), 
             'note' => $request->note,
+            'attachment_path' => $attachmentPath,
         ]);
 
-        // Enviar aviso al Admin (jefesupremogm@gmail.com)
-        try {
-            Mail::to('jefesupremogm@gmail.com')->send(new VacationRequestedAdmin($vacation));
-        } catch (\Exception $e) {
-            \Log::error('Error avisando al admin de nueva solicitud: ' . $e->getMessage());
+        // Enviar aviso al Admin (solo si no es borrador)
+        if ($vacation->status === 'pending') {
+            try {
+                Mail::to('jefesupremogm@gmail.com')->send(new VacationRequestedAdmin($vacation));
+            } catch (\Exception $e) {
+                \Log::error('Error avisando al admin de nueva solicitud: ' . $e->getMessage());
+            }
         }
 
         return new VacationResource($vacation);
@@ -204,19 +215,21 @@ class VacationController extends Controller
         // Si la petición incluye el cambio de estado a cancelado
         if ($request->has('status') && $request->status === 'canceled') {
             
-            // Regla: Cancelar solo si 'pending' o 'approved' y NO ha empezado el periodo
+            // Regla: Cancelar solo si 'pending' o 'approved'
             if (!in_array($vacation->status, ['pending', 'approved'])) {
                 return response()->json(['message' => 'Solo se pueden cancelar solicitudes pendientes o aprobadas.'], 422);
             }
 
             $startDate = Carbon::parse($vacation->start_date);
-            // Si el día ya ha pasado/es hoy, el empleado NO puede cancelar, pero el ADMIN SÍ (por si no se hicieron las horas, etc)
+            // Si el día ya ha pasado/es hoy, el empleado NO puede cancelar, pero el ADMIN SÍ 
             if (($startDate->isPast() || $startDate->isToday()) && !$isHrOrAdmin) {
                 return response()->json(['message' => 'No puedes cancelar solicitudes que ya han empezado o han pasado. Contacta con RRHH.'], 422);
             }
 
-            // Exigimos motivo de cancelación
-            $request->validate(['cancel_reason' => 'required|string|min:5']);
+            // Exigimos motivo de cancelación para empleados, opcional para admin pero recomendado
+            if (!$isHrOrAdmin) {
+                $request->validate(['cancel_reason' => 'required|string|min:5']);
+            }
 
             // Ajustar saldo si la solicitud ya estaba aprobada
             if ($vacation->status === 'approved') {
@@ -225,11 +238,11 @@ class VacationController extends Controller
                 
                 if ($balance) {
                     if ($vacation->type === 'vacation') {
-                        // Restauramos días de vacaciones (quitamos de los disfrutados)
-                        $balance->taken_days -= $vacation->days;
+                        // Restauramos días de vacaciones
+                        $balance->taken_days = (float)$balance->taken_days - (float)$vacation->days;
                     } elseif ($vacation->type === 'overtime') {
                         // Quitamos los días compensatorios que se habían sumado
-                        $balance->accrued_days -= $vacation->days;
+                        $balance->accrued_days = (float)$balance->accrued_days - (float)$vacation->days;
                     }
                     $balance->save();
                 }
@@ -237,18 +250,25 @@ class VacationController extends Controller
 
             $vacation->update([
                 'status' => 'canceled',
-                'cancel_reason' => $request->cancel_reason
+                'cancel_reason' => $request->cancel_reason ?? ($isHrOrAdmin ? 'Anulado por Administración' : null),
+                'approver_id' => $isHrOrAdmin ? $user->id : $vacation->approver_id // Guardar quién lo anuló
             ]);
 
-            // Notificamos a RRHH de la cancelación
+            // Avisar al admin o al empleado según corresponda
             try {
-                Mail::to('jefesupremogm@gmail.com')->send(new \App\Mail\VacationCanceledAdmin($vacation));
+                if ($isHrOrAdmin) {
+                    // Notificar al empleado que el admin le ha anulado las vacaciones
+                    Mail::to($vacation->user->email)->send(new \App\Mail\VacationRequestProcessed($vacation));
+                } else {
+                    // Notificar al admin que el empleado ha cancelado
+                    Mail::to('jefesupremogm@gmail.com')->send(new \App\Mail\VacationCanceledAdmin($vacation));
+                }
             } catch (\Exception $e) {
-                \Log::error('Error avisando al admin de cancelación: ' . $e->getMessage());
+                \Log::error('Error avisando de la cancelación: ' . $e->getMessage());
             }
 
             return response()->json([
-                'message' => 'Solicitud cancelada correctamente y saldo actualizado.', 
+                'message' => 'Solicitud anulada/cancelada correctamente y saldo actualizado.', 
                 'data' => new VacationResource($vacation)
             ]);
         }

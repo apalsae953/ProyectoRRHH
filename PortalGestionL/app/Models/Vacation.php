@@ -24,6 +24,7 @@ class Vacation extends Model
         'note',
         'cancel_reason',
         'admin_message',
+        'attachment_path',
     ];
 
     protected $casts = [

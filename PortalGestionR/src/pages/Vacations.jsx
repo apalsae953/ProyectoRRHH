@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from '../api/axios';
 import vacationService from '../services/vacationService';
+import ModalPortal from '../components/ModalPortal';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -17,10 +18,11 @@ const Vacations = () => {
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isOvertimeModalOpen, setIsOvertimeModalOpen] = useState(false);
-    const [newVacation, setNewVacation] = useState({ start_date: '', end_date: '', note: '' });
+    const [newVacation, setNewVacation] = useState({ start_date: '', end_date: '', note: '', type: 'vacation' });
     const [newOvertime, setNewOvertime] = useState({ date: '', hours: '', note: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
+    const [selectedFile, setSelectedFile] = useState(null);
     const [globalSettings, setGlobalSettings] = useState(null);
 
     // Paginación y Ordenamiento
@@ -112,14 +114,29 @@ const Vacations = () => {
         fetchData();
     }, []);
 
-    const handleRequestVacation = async (e) => {
-        e.preventDefault();
+    const handleRequestVacation = async (e, forcedStatus = 'pending') => {
+        if (e) e.preventDefault();
         setIsSubmitting(true);
         setFormError('');
+
+        const formData = new FormData();
+        formData.append('start_date', newVacation.start_date);
+        formData.append('end_date', newVacation.end_date);
+        formData.append('note', newVacation.note);
+        formData.append('type', newVacation.type || 'vacation');
+        formData.append('status', forcedStatus);
+        
+        if (selectedFile) {
+            formData.append('attachment', selectedFile);
+        }
+
         try {
-            await vacationService.requestVacation(newVacation);
+            await axios.post('/api/v1/vacations', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             setIsAddModalOpen(false);
-            setNewVacation({ start_date: '', end_date: '', note: '' });
+            setNewVacation({ start_date: '', end_date: '', note: '', type: 'vacation' });
+            setSelectedFile(null);
             await fetchData();
         } catch (error) {
             setFormError(error.response?.data?.message || 'Error al solicitar vacaciones');
@@ -179,18 +196,21 @@ const Vacations = () => {
     // Función para renderizar el color de la "píldora" según el estado
     const renderStatus = (status) => {
         const styles = {
+            draft: 'bg-slate-100 text-slate-600 border-slate-200',
             pending: 'bg-amber-50 text-amber-700 border-amber-200',
             approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             rejected: 'bg-red-50 text-red-700 border-red-200',
             canceled: 'bg-slate-50 text-slate-700 border-slate-200',
         };
         const icons = {
+            draft: 'fa-regular fa-file-lines',
             pending: 'fa-regular fa-clock',
             approved: 'fa-solid fa-check',
             rejected: 'fa-solid fa-xmark',
             canceled: 'fa-solid fa-ban',
         };
         const labels = {
+            draft: 'Borrador',
             pending: 'Pendiente',
             approved: 'Aprobado',
             rejected: 'Rechazado',
@@ -408,8 +428,19 @@ const Vacations = () => {
                                         </td>
                                         <td className="p-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                {vacation.adjunto && (
+                                                    <a
+                                                        href={vacation.adjunto}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="w-10 h-10 rounded-xl bg-corporate/5 text-corporate hover:bg-corporate hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm border border-corporate/10"
+                                                        title="Ver Adjunto"
+                                                    >
+                                                        <i className="fa-solid fa-paperclip text-sm"></i>
+                                                    </a>
+                                                )}
                                                 {/* El botón de cancelar solo sale si está pendiente/aprobada y NO ha pasado la fecha (o si eres admin) */}
-                                                {(vacation.estado === 'pending' || vacation.estado === 'approved') && 
+                                                {(vacation.estado === 'pending' || vacation.estado === 'approved' || vacation.estado === 'draft') && 
                                                  (new Date(vacation.fecha_inicio) > new Date() || isHrOrAdmin) && (
                                                     <button
                                                         onClick={() => handleCancelVacation(vacation.id)}
@@ -487,173 +518,249 @@ const Vacations = () => {
             </div >
 
             {/* Modal para solicitar vacaciones (Rediseño Rango Claro) */}
+            {/* Modal de Solicitud de Vacaciones */}
             {
                 isAddModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 flex flex-col transition-all duration-500">
-                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white relative">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-corporate opacity-[0.03] rounded-full translate-x-8 -translate-y-8"></div>
-                                <div className="relative z-10">
-                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Solicitar Vacaciones</h3>
-                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Define tu periodo de descanso</p>
+                    <ModalPortal>
+                        <div className="fixed inset-0 z-[10000] bg-slate-900/60 backdrop-blur-md animate-fade-in flex items-start justify-center overflow-y-auto custom-scrollbar">
+                            <div className="min-h-screen w-full flex items-center justify-center p-4 py-20">
+                                <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 flex flex-col transition-all duration-500 scale-100">
+                                <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white relative">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-corporate opacity-[0.03] rounded-full translate-x-8 -translate-y-8"></div>
+                                    <div className="relative z-10">
+                                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Solicitar Vacaciones</h3>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Define tu periodo de descanso</p>
+                                    </div>
+                                    <button onClick={() => setIsAddModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all group">
+                                        <i className="fa-solid fa-xmark transition-transform group-hover:rotate-90"></i>
+                                    </button>
                                 </div>
-                                <button onClick={() => setIsAddModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all group">
-                                    <i className="fa-solid fa-xmark transition-transform group-hover:rotate-90"></i>
-                                </button>
-                            </div>
-                            <div className="p-8">
-                                {formError && (
-                                    <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-2xl text-xs font-black uppercase tracking-wider animate-bounce">
-                                        <i className="fa-solid fa-triangle-exclamation mr-2"></i>
-                                        {formError}
-                                    </div>
-                                )}
-                                <form onSubmit={handleRequestVacation} className="space-y-8">
-                                    <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-10 h-10 rounded-xl bg-corporate/10 text-corporate flex items-center justify-center text-lg">
-                                                <i className="fa-solid fa-calendar-range"></i>
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Rango de Fechas Continuo</h4>
-                                                <p className="text-[10px] text-slate-400 font-bold italic mt-0.5">* Sábados, Domingos y Festivos NO restan saldo.</p>
-                                            </div>
+                                <div className="p-8">
+                                    {formError && (
+                                        <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-2xl text-xs font-black uppercase tracking-wider animate-bounce">
+                                            <i className="fa-solid fa-triangle-exclamation mr-2"></i>
+                                            {formError}
                                         </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
-                                            <div className="relative">
-                                                <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Desde el día...</label>
-                                                <div className="relative group">
-                                                    <i className="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-corporate/30 group-focus-within:text-corporate transition-colors"></i>
-                                                    <input
-                                                        type="date" required
-                                                        value={newVacation.start_date}
-                                                        onChange={e => setNewVacation({ ...newVacation, start_date: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700"
-                                                    />
+                                    )}
+                                    <form onSubmit={handleRequestVacation} className="space-y-8">
+                                        <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-10 h-10 rounded-xl bg-corporate/10 text-corporate flex items-center justify-center text-lg">
+                                                    <i className="fa-solid fa-calendar"></i>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="text-xs font-black color-black uppercase tracking-[0.2em]">Rango de Fechas Continuo</h4>
+                                                    <p className="text-[10px] font-bold italic mt-0.5">* Sábados, Domingos y Festivos NO restan saldo.</p>
                                                 </div>
                                             </div>
-                                            <div className="relative">
-                                                <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Hasta el día...</label>
-                                                <div className="relative group">
-                                                    <i className="fa-solid fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-corporate/30 group-focus-within:text-corporate transition-colors"></i>
-                                                    <input
-                                                        type="date" required
-                                                        value={newVacation.end_date}
-                                                        onChange={e => setNewVacation({ ...newVacation, end_date: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700"
-                                                    />
+
+                                            <div className="mb-8 p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center gap-5">
+                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm border transition-all duration-300 ${
+                                                    newVacation.type === 'vacation' ? 'bg-corporate/10 text-corporate border-corporate/20 shadow-corporate/10' : 
+                                                    newVacation.type === 'sick_leave' ? 'bg-red-50 text-red-500 border-red-100 shadow-red-100' : 
+                                                    'bg-slate-100 text-slate-500 border-slate-200 shadow-slate-100'
+                                                }`}>
+                                                    <i className={`fa-solid ${
+                                                        newVacation.type === 'vacation' ? 'fa-umbrella-beach' : 
+                                                        newVacation.type === 'sick_leave' ? 'fa-briefcase-medical' : 
+                                                        'fa-file-signature'
+                                                    }`}></i>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de Solicitud (Absentismo)</label>
+                                                    <select
+                                                        value={newVacation.type || 'vacation'}
+                                                        onChange={e => setNewVacation({ ...newVacation, type: e.target.value })}
+                                                        className="w-full h-12 px-4 bg-white rounded-xl border border-slate-200 focus:border-corporate focus:ring-4 focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700 shadow-sm"
+                                                    >
+                                                        <option value="vacation">Vacaciones Anuales (Descuenta Saldo)</option>
+                                                        <option value="sick_leave">Baja Médica / Contingencia</option>
+                                                        <option value="other">Asuntos Propios / Otros</option>
+                                                    </select>
                                                 </div>
                                             </div>
-                                            <div className="hidden md:block absolute left-1/2 top-11 -translate-x-1/2 text-slate-200">
-                                                <i className="fa-solid fa-arrow-right-long text-xl"></i>
-                                            </div>
-                                        </div>
 
-                                        {newVacation.start_date && newVacation.end_date && (
-                                            <div className="mt-8 space-y-4">
-                                                <div className="flex items-center justify-between p-4 bg-corporate/5 rounded-2xl border border-corporate/10">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-corporate shadow-sm">
-                                                            <i className="fa-solid fa-calculator"></i>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+                                                <div className="relative">
+                                                    <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Desde el día...</label>
+                                                    <div className="relative group">
+                                                        <i className="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-corporate/30 group-focus-within:text-corporate transition-colors"></i>
+                                                        <input
+                                                            type="date" required
+                                                            value={newVacation.start_date}
+                                                            onChange={e => setNewVacation({ ...newVacation, start_date: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="relative">
+                                                    <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Hasta el día...</label>
+                                                    <div className="relative group">
+                                                        <i className="fa-solid fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-corporate/30 group-focus-within:text-corporate transition-colors"></i>
+                                                        <input
+                                                            type="date" required
+                                                            value={newVacation.end_date}
+                                                            onChange={e => setNewVacation({ ...newVacation, end_date: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all font-bold text-slate-700"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="hidden md:block absolute left-1/2 top-11 -translate-x-1/2 text-slate-200">
+                                                    <i className="fa-solid fa-arrow-right-long text-xl"></i>
+                                                </div>
+                                            </div>
+
+                                            {newVacation.start_date && newVacation.end_date && (
+                                                <div className="mt-8 space-y-4">
+                                                    <div className="flex items-center justify-between p-4 bg-corporate/5 rounded-2xl border border-corporate/10">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-corporate shadow-sm">
+                                                                <i className="fa-solid fa-calculator"></i>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Laborables</span>
+                                                                <span className="text-xl font-black text-corporate">
+                                                                    {(() => {
+                                                                        let start = new Date(newVacation.start_date);
+                                                                        let end = new Date(newVacation.end_date);
+                                                                        let count = 0;
+                                                                        let cur = new Date(start);
+                                                                        while (cur <= end) {
+                                                                            const day = cur.getDay();
+                                                                            const isWeekend = day === 0 || day === 6;
+                                                                            const isHoliday = holidays.some(h => new Date(h.date).toDateString() === cur.toDateString());
+                                                                            if (!isWeekend && !isHoliday) count++;
+                                                                            cur.setDate(cur.getDate() + 1);
+                                                                        }
+                                                                        return count;
+                                                                    })()} días
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Laborables</span>
-                                                            <span className="text-xl font-black text-corporate">
-                                                                {(() => {
-                                                                    let start = new Date(newVacation.start_date);
-                                                                    let end = new Date(newVacation.end_date);
-                                                                    let count = 0;
-                                                                    let cur = new Date(start);
-                                                                    while (cur <= end) {
-                                                                        const day = cur.getDay();
-                                                                        const isWeekend = day === 0 || day === 6;
-                                                                        const isHoliday = holidays.some(h => new Date(h.date).toDateString() === cur.toDateString());
-                                                                        if (!isWeekend && !isHoliday) count++;
-                                                                        cur.setDate(cur.getDate() + 1);
-                                                                    }
-                                                                    return count;
-                                                                })()} días
-                                                            </span>
+                                                    </div>
+
+                                                    <div className="bg-white rounded-2xl border border-slate-100 p-4 max-h-40 overflow-y-auto custom-scrollbar">
+                                                        <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                            <i className="fa-solid fa-list-check"></i>
+                                                            Desglose del periodo
+                                                        </h5>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(() => {
+                                                                let start = new Date(newVacation.start_date);
+                                                                let end = new Date(newVacation.end_date);
+                                                                let days = [];
+                                                                let cur = new Date(start);
+                                                                while (cur <= end) {
+                                                                    const day = cur.getDay();
+                                                                    const isWeekend = day === 0 || day === 6;
+                                                                    const isHoliday = holidays.find(h => new Date(h.date).toDateString() === cur.toDateString());
+                                                                    days.push({
+                                                                        date: new Date(cur),
+                                                                        isWorking: !isWeekend && !isHoliday,
+                                                                        type: isWeekend ? 'weekend' : (isHoliday ? 'holiday' : 'working'),
+                                                                        label: isHoliday ? isHoliday.description : (isWeekend ? 'Finde' : '')
+                                                                    });
+                                                                    cur.setDate(cur.getDate() + 1);
+                                                                }
+                                                                return days.map((d, i) => (
+                                                                    <div key={i} className={`px-3 py-1.5 rounded-xl text-[9px] font-black border flex flex-col items-center min-w-[50px] ${d.isWorking ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300 opacity-60'}`}>
+                                                                        <span>{d.date.getDate()} {monthNames[d.date.getMonth()].substring(0, 3)}</span>
+                                                                        {d.label && <span className="text-[7px] truncate max-w-[40px] mt-0.5">{d.label}</span>}
+                                                                    </div>
+                                                                ));
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                <div className="bg-white rounded-2xl border border-slate-100 p-4 max-h-40 overflow-y-auto custom-scrollbar">
-                                                    <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                        <i className="fa-solid fa-list-check"></i>
-                                                        Desglose del periodo
-                                                    </h5>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {(() => {
-                                                            let start = new Date(newVacation.start_date);
-                                                            let end = new Date(newVacation.end_date);
-                                                            let days = [];
-                                                            let cur = new Date(start);
-                                                            while (cur <= end) {
-                                                                const day = cur.getDay();
-                                                                const isWeekend = day === 0 || day === 6;
-                                                                const isHoliday = holidays.find(h => new Date(h.date).toDateString() === cur.toDateString());
-                                                                days.push({
-                                                                    date: new Date(cur),
-                                                                    isWorking: !isWeekend && !isHoliday,
-                                                                    type: isWeekend ? 'weekend' : (isHoliday ? 'holiday' : 'working'),
-                                                                    label: isHoliday ? isHoliday.description : (isWeekend ? 'Finde' : '')
-                                                                });
-                                                                cur.setDate(cur.getDate() + 1);
-                                                            }
-                                                            return days.map((d, i) => (
-                                                                <div key={i} className={`px-3 py-1.5 rounded-xl text-[9px] font-black border flex flex-col items-center min-w-[50px] ${d.isWorking ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300 opacity-60'}`}>
-                                                                    <span>{d.date.getDate()} {monthNames[d.date.getMonth()].substring(0, 3)}</span>
-                                                                    {d.label && <span className="text-[7px] truncate max-w-[40px] mt-0.5">{d.label}</span>}
-                                                                </div>
-                                                            ));
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest pl-1">Motivo o comentario adicional</label>
-                                        <textarea
-                                            value={newVacation.note}
-                                            onChange={e => setNewVacation({ ...newVacation, note: e.target.value })}
-                                            rows="3"
-                                            className="w-full px-5 py-4 bg-white rounded-[2rem] border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all resize-none font-medium text-slate-700 placeholder:text-slate-200"
-                                            placeholder="Detalla si es necesario algún motivo especial..."
-                                        ></textarea>
-                                    </div>
-
-                                    <div className="pt-2 flex justify-end gap-3">
-                                        <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-100 transition-all">
-                                            Descartar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="px-8 py-4 bg-gradient-to-r from-corporate to-indigo-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-corporate/20 hover:shadow-corporate/40 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 flex items-center gap-3"
-                                        >
-                                            {isSubmitting ? (
-                                                <><i className="fa-solid fa-circle-notch fa-spin"></i> Enviando...</>
-                                            ) : (
-                                                <><i className="fa-solid fa-paper-plane text-xs"></i> Lanzar Solicitud</>
                                             )}
-                                        </button>
-                                    </div>
-                                </form>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-700 mb-2 uppercase tracking-widest pl-1">Motivo o comentario adicional</label>
+                                            <textarea
+                                                value={newVacation.note}
+                                                onChange={e => setNewVacation({ ...newVacation, note: e.target.value })}
+                                                rows="2"
+                                                className="w-full px-5 py-4 bg-white rounded-[1.5rem] border border-slate-200 focus:border-corporate focus:ring-[6px] focus:ring-corporate/5 outline-none transition-all resize-none font-medium text-slate-700"
+                                                placeholder="Detalla si es necesario algún motivo especial..."
+                                            ></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-700 mb-2 uppercase tracking-widest pl-1">Adjuntar documento (Opcional)</label>
+                                            <div className="relative group/upload">
+                                                <input
+                                                    type="file"
+                                                    id="vacation-attachment"
+                                                    onChange={e => setSelectedFile(e.target.files[0])}
+                                                    className="hidden"
+                                                    accept=".pdf,.png,.jpg,.jpeg"
+                                                />
+                                                <label
+                                                    htmlFor="vacation-attachment"
+                                                    className="flex items-center justify-center w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-corporate hover:bg-corporate/5 transition-all text-slate-400 group-hover/upload:text-corporate"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <i className={`fa-solid ${selectedFile ? 'fa-file-circle-check text-emerald-500' : 'fa-cloud-arrow-up'}`}></i>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">
+                                                            {selectedFile ? selectedFile.name : 'Sube un justificante o documento'}
+                                                        </span>
+                                                    </div>
+                                                </label>
+                                                {selectedFile && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setSelectedFile(null)}
+                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <i className="fa-solid fa-xmark text-[10px]"></i>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2 flex justify-between gap-3">
+                                            <button 
+                                                type="button" 
+                                                disabled={isSubmitting}
+                                                onClick={(e) => handleRequestVacation(null, 'draft')} 
+                                                className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-all flex items-center gap-2 border border-transparent hover:border-slate-200"
+                                            >
+                                                <i className="fa-regular fa-floppy-disk"></i>
+                                                Guardar Borrador
+                                            </button>
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">
+                                                    Cerrar
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    className="px-8 py-4 bg-gradient-to-r from-corporate to-indigo-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-corporate/20 hover:shadow-corporate/40 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 flex items-center gap-3"
+                                                >
+                                                    {isSubmitting ? (
+                                                        <><i className="fa-solid fa-circle-notch fa-spin"></i> Enviando...</>
+                                                    ) : (
+                                                        <><i className="fa-solid fa-paper-plane text-xs"></i> Lanzar Solicitud</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </ModalPortal>
                 )
             }
 
-            {/* Modal para solicitar Horas Extra */}
-            {
-                isOvertimeModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 flex flex-col transition-all duration-500">
+            {/* Modal de Solicitud de Horas Extra */}
+            {isOvertimeModalOpen && (
+                <ModalPortal>
+                    <div className="fixed inset-0 z-[10000] bg-slate-900/60 backdrop-blur-md animate-fade-in flex items-start justify-center overflow-y-auto custom-scrollbar">
+                        <div className="min-h-screen w-full flex items-center justify-center p-4 py-20">
+                            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 flex flex-col transition-all duration-500 scale-100">
                             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-amber-50 to-white relative">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400 opacity-[0.03] rounded-full translate-x-8 -translate-y-8"></div>
                                 <div className="relative z-10">
@@ -715,12 +822,13 @@ const Vacations = () => {
                                         </button>
                                     </div>
                                 </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-                )
-            }
-        </div >
+                </ModalPortal>
+            )}
+        </div>
     );
 };
 

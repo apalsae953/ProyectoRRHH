@@ -26,23 +26,11 @@ const Documents = () => {
         fetchDocuments();
     }, [filter]);
 
-    const handleDownload = async (doc) => {
-        try {
-            const response = await axios.get(`/api/v1/documents/${doc.id}/download`, {
-                responseType: 'blob'
-            });
-            const isImage = ['jpg', 'jpeg', 'png'].includes(doc.mime?.split('/')[1]?.toLowerCase());
-            const extension = isImage ? doc.mime.split('/')[1] : 'pdf';
-
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `${doc.title}.${extension}`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch (error) {
-            alert("Error al descargar el archivo");
+    const handleDownload = (doc) => {
+        if (doc.url_descarga) {
+            window.open(doc.url_descarga, '_blank');
+        } else {
+            alert("Enlace de descarga no disponible");
         }
     };
 

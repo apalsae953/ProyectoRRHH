@@ -22,6 +22,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     });
 
+    // Ruta de descarga de documentos (con URL temporal firmada para visualización directa)
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])
+        ->name('documents.download')
+        ->middleware('signed');
+
     // Rutas protegidas (Requieren el token de Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
         
@@ -66,9 +71,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/employees/{employee}/documents-list', [DocumentController::class, 'employeeDocuments']);
         Route::post('/employees/{employee}/documents', [DocumentController::class, 'store']);
         
-        // Descargar un documento (validando permisos mediante URL temporal firmada)
-        Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
-    
         // RRHH o Admin gestionan documentos de un empleado específico
         Route::patch('/documents/{document}', [DocumentController::class, 'update']);
         Route::delete('/documents/{document}', [DocumentController::class, 'destroy']);
