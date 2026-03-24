@@ -128,11 +128,11 @@ const Profile = () => {
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden mb-6 transition-colors duration-300">
-                <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden mb-6 transition-colors duration-300">
+                <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
                     <div>
-                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Mi Perfil</h2>
-                        <p className="text-slate-500 text-sm mt-1 font-medium">Gestiona tu información personal y completa tu perfil.</p>
+                        <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight transition-colors">Mi Perfil</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium transition-colors">Gestiona tu información personal y completa tu perfil.</p>
                     </div>
                 </div>
             </div>
@@ -140,19 +140,19 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Columna Izquierda: Foto y Rol */}
                 <div className="col-span-1">
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center transition-colors duration-300">
-                        <div className="w-32 h-32 rounded-full bg-corporate text-white flex items-center justify-center text-4xl font-bold shadow-xl mb-6 relative overflow-hidden ring-4 ring-corporate/20">
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center transition-colors duration-300">
+                        <div className="w-32 h-32 rounded-full bg-corporate text-white flex items-center justify-center text-4xl font-bold shadow-xl mb-6 relative overflow-hidden ring-4 ring-corporate/20 dark:ring-corporate/40 transition-shadow">
                             {photoPreview ? (
                                 <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <>{user?.name?.charAt(0)}{user?.surname?.charAt(0)}</>
                             )}
                         </div>
-                        <h3 className="text-xl font-bold text-slate-800">{user?.name} {user?.surname}</h3>
-                        <p className="text-sm font-medium text-slate-500 mt-1">{user?.email}</p>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">DNI</p>
-                        <p className="text-sm font-bold text-slate-700">{maskDni(user?.dni)}</p>
-                        <div className="mt-4 px-4 py-1.5 bg-corporate/10 text-corporate font-bold text-sm rounded-full">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white transition-colors">{user?.name} {user?.surname}</h3>
+                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 transition-colors">{user?.email}</p>
+                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5 transition-colors">DNI</p>
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">{maskDni(user?.dni)}</p>
+                        <div className="mt-4 px-4 py-1.5 bg-corporate/10 dark:bg-corporate/20 text-corporate dark:text-corporate-light font-bold text-sm rounded-full transition-colors">
                             {displayRole}
                         </div>
                     </div>
@@ -160,13 +160,13 @@ const Profile = () => {
 
                 {/* Columna Derecha: Formulario */}
                 <div className="col-span-1 md:col-span-2">
-                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 transition-colors duration-300">
-                        <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 transition-colors duration-300">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 border-b border-slate-100 dark:border-slate-700 pb-4 transition-colors">
                             Información Personal
                         </h3>
 
                         {message.text && (
-                            <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 font-medium text-sm border ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                            <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 font-medium text-sm border transition-colors ${message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'}`}>
                                 <i className={`fa-solid ${message.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} text-lg`}></i>
                                 {message.text}
                             </div>
@@ -175,62 +175,62 @@ const Profile = () => {
                         <form onSubmit={handleSave} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Nombre</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 transition-colors">Nombre</label>
                                     <input
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all disabled:bg-slate-100 disabled:text-slate-500"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate/20 dark:focus:ring-corporate/40 focus:border-corporate dark:focus:border-corporate transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-400"
                                         required
                                         disabled={!isAdminOrHr}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Apellidos</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 transition-colors">Apellidos</label>
                                     <input
                                         type="text"
                                         value={formData.surname}
                                         onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all disabled:bg-slate-100 disabled:text-slate-500"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate/20 dark:focus:ring-corporate/40 focus:border-corporate dark:focus:border-corporate transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-400"
                                         required
                                         disabled={!isAdminOrHr}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Correo Electrónico</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 transition-colors">Correo Electrónico</label>
                                     <input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all disabled:bg-slate-100 disabled:text-slate-500"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate/20 dark:focus:ring-corporate/40 focus:border-corporate dark:focus:border-corporate transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-400"
                                         required
                                         disabled={!isAdminOrHr}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Teléfono de Contacto</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 transition-colors">Teléfono de Contacto</label>
                                     <input
                                         type="text"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate/20 dark:focus:ring-corporate/40 focus:border-corporate dark:focus:border-corporate transition-all"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Dirección</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 transition-colors">Dirección</label>
                                     <input
                                         type="text"
                                         value={formData.address}
                                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate/20 dark:focus:ring-corporate/40 focus:border-corporate dark:focus:border-corporate transition-all"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Foto de Perfil</label>
-                                <div className="flex items-center gap-4">
-                                    <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 px-5 py-3 rounded-xl border border-slate-200 font-bold text-sm text-slate-700 transition-colors flex items-center gap-2 shadow-sm">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 transition-colors">Foto de Perfil</label>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    <label className="cursor-pointer bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-bold text-sm text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2 shadow-sm">
                                         <i className="fa-solid fa-cloud-arrow-up"></i>
                                         Subir Foto
                                         <input
@@ -240,13 +240,13 @@ const Profile = () => {
                                             className="hidden"
                                         />
                                     </label>
-                                    <span className="text-xs text-slate-500 font-medium">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium transition-colors">
                                         {photoFile ? photoFile.name : 'Formatos recomendados: JPG, PNG, WEBP. Máx. 2MB.'}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex justify-end border-t border-slate-100 mt-6">
+                            <div className="pt-4 flex justify-end border-t border-slate-100 dark:border-slate-700 mt-6 transition-colors">
                                 <button
                                     type="submit"
                                     disabled={loading}
@@ -260,14 +260,14 @@ const Profile = () => {
                     </div>
 
                     {/* SECCIÓN 2FA */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mt-8 transition-colors duration-300">
-                        <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4 flex items-center gap-2">
-                            <i className="fa-solid fa-shield-halved text-corporate"></i>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-8 mt-8 transition-colors duration-300">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 border-b border-slate-100 dark:border-slate-700 pb-4 flex items-center gap-2 transition-colors">
+                            <i className="fa-solid fa-shield-halved text-corporate dark:text-corporate-light transition-colors"></i>
                             Doble Factor de Autenticación (2FA)
                         </h3>
 
                         {twoFactorMessage.text && (
-                            <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 font-medium text-sm border ${twoFactorMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                            <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 font-medium text-sm border transition-colors ${twoFactorMessage.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'}`}>
                                 <i className={`fa-solid ${twoFactorMessage.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} text-lg`}></i>
                                 {twoFactorMessage.text}
                             </div>
@@ -275,28 +275,28 @@ const Profile = () => {
 
                         <div className="space-y-4">
                             {twoFactorActive ? (
-                                <div className="p-6 bg-slate-50 border border-emerald-200 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
                                     <div>
-                                        <p className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2 transition-colors">
                                             <i className="fa-solid fa-check-circle"></i> 2FA Activado
                                         </p>
-                                        <p className="text-xs text-slate-500 mt-1">Tu cuenta está protegida con autenticación de dos pasos.</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">Tu cuenta está protegida con autenticación de dos pasos.</p>
                                     </div>
                                     <button
                                         onClick={handleDisable2FA}
                                         disabled={twoFactorLoading}
-                                        className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-colors shadow-sm disabled:opacity-50"
+                                        className="px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl font-bold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm disabled:opacity-50"
                                     >
                                         Desactivar 2FA
                                     </button>
                                 </div>
                             ) : twoFactorQr ? (
-                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center text-center space-y-4">
-                                    <p className="text-sm font-bold text-slate-700">1. Escanea este código QR con tu app de autenticación (Google Authenticator, Authy, etc).</p>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm" dangerouslySetInnerHTML={{ __html: atob(twoFactorQr) }} />
-                                    <p className="text-xs text-slate-500 font-medium">O introduce este código manualmente: <span className="text-slate-700 font-mono font-bold bg-slate-200 px-2 py-1 rounded">{twoFactorSecret}</span></p>
+                                <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center text-center space-y-4 transition-colors">
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">1. Escanea este código QR con tu app de autenticación (Google Authenticator, Authy, etc).</p>
+                                    <div className="bg-white p-3 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm" dangerouslySetInnerHTML={{ __html: atob(twoFactorQr) }} />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium transition-colors">O introduce este código manualmente: <span className="text-slate-700 dark:text-slate-200 font-mono font-bold bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded transition-colors">{twoFactorSecret}</span></p>
 
-                                    <p className="text-sm font-bold text-slate-700 mt-4">2. Introduce el código de 6 dígitos generado por tu app:</p>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-4 transition-colors">2. Introduce el código de 6 dígitos generado por tu app:</p>
                                     <div className="flex gap-2 w-full max-w-xs justify-center text-center mx-auto">
                                         <input
                                             type="text"
@@ -304,11 +304,11 @@ const Profile = () => {
                                             onChange={(e) => setTwoFactorCode(e.target.value)}
                                             maxLength={6}
                                             placeholder="Ej. 123456"
-                                            className="w-full px-4 py-2 text-center tracking-[0.3em] font-mono font-bold rounded-xl border border-slate-300 focus:ring-2 focus:ring-corporate focus:border-corporate outline-none uppercase text-lg"
+                                            className="w-full px-4 py-2 text-center tracking-[0.3em] font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-corporate dark:focus:ring-corporate-light focus:border-corporate outline-none uppercase text-lg transition-colors"
                                         />
                                     </div>
                                     <div className="flex gap-2 mt-4 justify-center">
-                                        <button onClick={() => { setTwoFactorQr(''); setTwoFactorSecret(''); }} className="px-5 py-2.5 rounded-xl font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors text-sm">
+                                        <button onClick={() => { setTwoFactorQr(''); setTwoFactorSecret(''); }} className="px-5 py-2.5 rounded-xl font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors text-sm">
                                             Cancelar
                                         </button>
                                         <button onClick={handleConfirm2FA} disabled={twoFactorLoading || twoFactorCode.length < 6} className="px-5 py-2.5 rounded-xl font-bold bg-corporate hover:bg-corporate-dark text-white transition-colors shadow-md text-sm disabled:opacity-50">
@@ -317,10 +317,10 @@ const Profile = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
                                     <div>
-                                        <p className="text-sm font-bold text-slate-700">2FA Desactivado</p>
-                                        <p className="text-xs text-slate-500 mt-1">Aumenta la seguridad de tu cuenta solicitando un código temporal al iniciar sesión.</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors">2FA Desactivado</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">Aumenta la seguridad de tu cuenta solicitando un código temporal al iniciar sesión.</p>
                                     </div>
                                     <button
                                         onClick={handleEnable2FA}

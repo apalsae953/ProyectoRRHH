@@ -13,6 +13,8 @@ import Documents from './pages/Documents';
 import TeamCalendar from './pages/TeamCalendar';
 import Holidays from './pages/Holidays';
 import Reports from './pages/Reports';
+import TimeLogs from './pages/TimeLogs';
+import News from './pages/News';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
             <Route path="/calendario" element={<TeamCalendar />} />
             <Route path="/festivos" element={<Holidays />} />
             <Route path="/gestion-vacaciones" element={<AdminVacations />} />
+            <Route path="/control-horario" element={<TimeLogs />} />
+            <Route path="/noticias" element={<News />} />
             <Route path="/organizacion" element={<AdminSettings />} />
             <Route path="/documentos" element={<Documents />} />
             <Route path="/reportes" element={<Reports />} />

@@ -99,6 +99,12 @@ class User extends Authenticatable
         return $this->hasMany(VacationBalance::class);
     }
 
+    // Un usuario tiene notificaciones
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     public function getFullNameAttribute()
     {
         return "{$this->name} {$this->surname}";

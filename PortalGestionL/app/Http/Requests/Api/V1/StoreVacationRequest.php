@@ -21,6 +21,7 @@ class StoreVacationRequest extends FormRequest
             'end_date' => 'required|date|after_or_equal:start_date',
             'note' => 'nullable|string|max:500',
             'type' => 'sometimes|string|in:vacation,overtime,sick_leave,other',
+            'hours' => 'nullable|numeric|min:0.5',
             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:4096',
             'status' => 'nullable|string|in:draft,pending',
         ];

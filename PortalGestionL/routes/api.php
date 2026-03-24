@@ -12,9 +12,12 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\LogController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\PositionController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\NewsController;
 use App\Http\Resources\V1\EmployeeResource;
 
-Route::prefix('v1')->group(function () {
+Route::group(['prefix' => 'v1'], function () {
     
     // Rutas públicas de Autenticación
     Route::prefix('auth')->group(function () {
@@ -104,5 +107,25 @@ Route::prefix('v1')->group(function () {
         // --- REPORTES Y AUDITORÍA ---
         Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
         Route::get('/logs', [LogController::class, 'index']);
+
+        // --- NOTIFICACIONES ---
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/clear-all', [NotificationController::class, 'clearAll']);
+
+        // --- BUSCADOR GLOBAL ---
+        Route::get('/search', [SearchController::class, 'search']);
+
+        // --- TABLÓN DE ANUNCIOS / NOTICIAS ---
+        Route::apiResource('news', NewsController::class);
+
+        // --- FICHAJE (CONTROL HORARIO) ---
+        Route::prefix('time-logs')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\TimeLogController::class, 'index']); 
+            Route::get('/export', [\App\Http\Controllers\Api\V1\TimeLogController::class, 'export']); 
+            Route::get('/status', [\App\Http\Controllers\Api\V1\TimeLogController::class, 'status']); 
+            Route::post('/check-in', [\App\Http\Controllers\Api\V1\TimeLogController::class, 'checkIn']);
+            Route::post('/check-out', [\App\Http\Controllers\Api\V1\TimeLogController::class, 'checkOut']);
+        });
     });
 });

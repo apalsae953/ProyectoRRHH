@@ -173,25 +173,25 @@ const Reports = () => {
     }
 
     return (
-        <div className="space-y-8 animate-fade-in pb-10">
+        <div className="space-y-8 animate-fade-in pb-10 transition-colors">
             {/* Cabecera */}
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden mb-6">
-                <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden mb-6 transition-colors">
+                <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
                     <div>
-                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Reportes y Auditoría</h2>
-                        <p className="text-slate-500 text-sm mt-1 font-medium">Panel de control con métricas globales y registro de actividad.</p>
+                        <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight transition-colors">Reportes y Auditoría</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium transition-colors">Panel de control con métricas globales y registro de actividad.</p>
                     </div>
-                    <div className="flex bg-slate-200/50 p-1.5 rounded-2xl">
+                    <div className="flex bg-slate-200/50 dark:bg-slate-900/50 p-1.5 rounded-2xl transition-colors">
                         <button
                             onClick={() => setActiveTab('reports')}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'reports' ? 'bg-white text-corporate shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'reports' ? 'bg-white dark:bg-slate-700 text-corporate dark:text-corporate-light shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                         >
                             <i className="fa-solid fa-chart-pie mr-2"></i> Reportes
                         </button>
                         {isAdmin && (
                             <button
                                 onClick={() => setActiveTab('logs')}
-                                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'logs' ? 'bg-white text-corporate shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'logs' ? 'bg-white dark:bg-slate-700 text-corporate dark:text-corporate-light shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                             >
                                 <i className="fa-solid fa-clipboard-list mr-2"></i> Auditoría (Logs)
                             </button>
@@ -201,8 +201,32 @@ const Reports = () => {
             </div>
 
             {loading ? (
-                <div className="flex justify-center p-20">
-                    <i className="fa-solid fa-circle-notch fa-spin text-4xl text-corporate"></i>
+                <div className="space-y-8">
+                    {/* Tarjetas Superiores Skeleton */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 h-32 animate-pulse">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+                                    <div className="w-20 h-6 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                                </div>
+                                <div className="w-16 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg mt-2"></div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Gráficas Principales Skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-sm border border-slate-100 dark:border-slate-700 h-[400px] animate-pulse flex flex-col">
+                            <div className="w-48 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg mb-8"></div>
+                            <div className="flex-1 bg-slate-100 dark:bg-slate-700/50 rounded-xl"></div>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-sm border border-slate-100 dark:border-slate-700 h-[400px] animate-pulse flex flex-col">
+                            <div className="w-48 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg mb-8"></div>
+                            <div className="flex-1 flex items-center justify-center">
+                                <div className="w-48 h-48 rounded-full bg-slate-100 dark:bg-slate-700/50 border-8 border-slate-200 dark:border-slate-600"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <>
@@ -212,108 +236,108 @@ const Reports = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 
                             {/* Card de Empleados */}
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-corporate/20 dark:hover:border-corporate/40 transition-shadow color-scheme-light dark:color-scheme-dark">
                                 <div className="flex justify-between items-start mb-3">
-                                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><i className="fa-solid fa-users text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-[10px] rounded-full">Empleados</span>
+                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 rounded-2xl"><i className="fa-solid fa-users text-xl"></i></div>
+                                    <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold text-[10px] rounded-full">Empleados</span>
                                 </div>
-                                <h4 className="text-2xl font-black text-slate-800">{reportData.employees.total}</h4>
-                                <p className="text-[11px] text-slate-500 font-medium mt-1">Activos: <span className="text-emerald-500 font-bold">{reportData.employees.active}</span></p>
+                                <h4 className="text-2xl font-black text-slate-800 dark:text-white">{reportData.employees.total}</h4>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Activos: <span className="text-emerald-500 font-bold">{reportData.employees.active}</span></p>
                             </div>
 
                             {/* Card de Documentos */}
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-corporate/20 dark:hover:border-corporate/40 transition-shadow color-scheme-light dark:color-scheme-dark">
                                 <div className="flex justify-between items-start mb-3">
-                                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><i className="fa-solid fa-file-invoice text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-full">Documentos</span>
+                                    <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-500 rounded-2xl"><i className="fa-solid fa-file-invoice text-xl"></i></div>
+                                    <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-[10px] rounded-full">Documentos</span>
                                 </div>
-                                <h4 className="text-2xl font-black text-slate-800">{reportData.documents.total}</h4>
-                                <p className="text-[11px] text-slate-500 font-medium mt-1">Nóminas: <span className="text-slate-700 font-bold">{reportData.documents.by_type.payroll}</span></p>
+                                <h4 className="text-2xl font-black text-slate-800 dark:text-white">{reportData.documents.total}</h4>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Nóminas: <span className="text-slate-700 font-bold">{reportData.documents.by_type.payroll}</span></p>
                             </div>
 
                             {/* Card de Vacaciones */}
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-corporate/20 dark:hover:border-corporate/40 transition-shadow color-scheme-light dark:color-scheme-dark">
                                 <div className="flex justify-between items-start mb-3">
-                                    <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl"><i className="fa-solid fa-plane-departure text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-amber-50 text-amber-700 font-bold text-[10px] rounded-full">Vacaciones</span>
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 rounded-2xl"><i className="fa-solid fa-plane-departure text-xl"></i></div>
+                                    <span className="px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold text-[10px] rounded-full">Vacaciones</span>
                                 </div>
-                                <h4 className="text-2xl font-black text-slate-800">{reportData.vacations.approved}</h4>
-                                <p className="text-[11px] text-slate-500 font-medium mt-1">Pendientes: <span className="text-amber-500 font-bold">{reportData.vacations.pending}</span></p>
+                                <h4 className="text-2xl font-black text-slate-800 dark:text-white">{reportData.vacations.approved}</h4>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Pendientes: <span className="text-amber-500 font-bold">{reportData.vacations.pending}</span></p>
                             </div>
 
                             {/* Card de Horas Extra */}
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-corporate/20 dark:hover:border-corporate/40 transition-shadow color-scheme-light dark:color-scheme-dark">
                                 <div className="flex justify-between items-start mb-3">
-                                    <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl"><i className="fa-solid fa-clock-rotate-left text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-orange-50 text-orange-700 font-bold text-[10px] rounded-full">Horas Extra</span>
+                                    <div className="p-3 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-500 rounded-2xl"><i className="fa-solid fa-clock-rotate-left text-xl"></i></div>
+                                    <span className="px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 font-bold text-[10px] rounded-full">Horas Extra</span>
                                 </div>
-                                <h4 className="text-2xl font-black text-slate-800">{reportData.overtime?.total_approved || 0}</h4>
+                                <h4 className="text-2xl font-black text-slate-800 dark:text-white">{reportData.overtime?.total_approved || 0}</h4>
                                 <div className="space-y-0.5 mt-1">
-                                    <p className="text-[11px] text-slate-500 font-medium">Horas totales: <span className="text-emerald-600 font-bold">{reportData.overtime?.total_hours || 0}h</span></p>
-                                    <p className="text-[11px] text-slate-500 font-medium">Pendientes: <span className="text-orange-600 font-bold">{reportData.overtime?.pending || 0}</span></p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Horas totales: <span className="text-emerald-600 font-bold">{reportData.overtime?.total_hours || 0}h</span></p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Pendientes: <span className="text-orange-600 font-bold">{reportData.overtime?.pending || 0}</span></p>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-corporate/20 dark:hover:border-corporate/40 transition-shadow color-scheme-light dark:color-scheme-dark">
                                 <div className="flex justify-between items-start mb-3">
-                                    <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl"><i className="fa-solid fa-user-plus text-xl"></i></div>
-                                    <span className="px-3 py-1 bg-purple-50 text-purple-700 font-bold text-[10px] rounded-full">Nuevos Emp.</span>
+                                    <div className="p-3 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-500 rounded-2xl"><i className="fa-solid fa-user-plus text-xl"></i></div>
+                                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 font-bold text-[10px] rounded-full">Nuevos Emp.</span>
                                 </div>
-                                <h4 className="text-2xl font-black text-slate-800">{reportData.employees.recent_hires_6m}</h4>
-                                <p className="text-[11px] text-slate-500 font-medium mt-1">Últimos 6 meses</p>
+                                <h4 className="text-2xl font-black text-slate-800 dark:text-white">{reportData.employees.recent_hires_6m}</h4>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Últimos 6 meses</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                             {/* SECCIÓN DOCUMENTOS POR TIPO */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
-                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 md:p-8 transition-colors">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 transition-colors">
                                     <i className="fa-solid fa-chart-bar text-corporate"></i> Desglose de Documentos
                                 </h3>
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-bold"><i className="fa-solid fa-money-check-dollar"></i></div>
-                                            <span className="font-bold text-slate-700">Nóminas</span>
+                                            <span className="font-bold text-slate-700 dark:text-slate-200 transition-colors">Nóminas</span>
                                         </div>
-                                        <span className="font-black text-xl text-slate-800">{reportData.documents.by_type.payroll}</span>
+                                        <span className="font-black text-xl text-slate-800 dark:text-white transition-colors">{reportData.documents.by_type.payroll}</span>
                                     </div>
-                                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center font-bold"><i className="fa-solid fa-file-signature"></i></div>
-                                            <span className="font-bold text-slate-700">Contratos</span>
+                                            <span className="font-bold text-slate-700 dark:text-slate-200 transition-colors">Contratos</span>
                                         </div>
-                                        <span className="font-black text-xl text-slate-800">{reportData.documents.by_type.contract}</span>
+                                        <span className="font-black text-xl text-slate-800 dark:text-white transition-colors">{reportData.documents.by_type.contract}</span>
                                     </div>
-                                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center font-bold"><i className="fa-solid fa-certificate"></i></div>
-                                            <span className="font-bold text-slate-700">Certificados</span>
+                                            <span className="font-bold text-slate-700 dark:text-slate-200 transition-colors">Certificados</span>
                                         </div>
-                                        <span className="font-black text-xl text-slate-800">{reportData.documents.by_type.certificate}</span>
+                                        <span className="font-black text-xl text-slate-800 dark:text-white transition-colors">{reportData.documents.by_type.certificate}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* SECCIÓN ESTADO VACACIONES */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
-                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 md:p-8 transition-colors">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2 transition-colors">
                                     <i className="fa-solid fa-calendar-check text-corporate"></i> Solicitudes Vacacionales ({new Date().getFullYear()})
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4 mb-8">
-                                    <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 text-center">
-                                        <span className="block text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">Pendientes</span>
-                                        <span className="text-4xl font-black text-amber-700">{reportData.vacations.pending}</span>
+                                    <div className="p-6 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/50 text-center transition-colors">
+                                        <span className="block text-amber-600 dark:text-amber-500 text-xs font-bold uppercase tracking-wider mb-2 transition-colors">Pendientes</span>
+                                        <span className="text-4xl font-black text-amber-700 dark:text-amber-400 transition-colors">{reportData.vacations.pending}</span>
                                     </div>
-                                    <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-100 text-center">
-                                        <span className="block text-emerald-600 text-xs font-bold uppercase tracking-wider mb-2">Aprobadas</span>
-                                        <span className="text-4xl font-black text-emerald-700">{reportData.vacations.approved}</span>
+                                    <div className="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 text-center transition-colors">
+                                        <span className="block text-emerald-600 dark:text-emerald-500 text-xs font-bold uppercase tracking-wider mb-2 transition-colors">Aprobadas</span>
+                                        <span className="text-4xl font-black text-emerald-700 dark:text-emerald-400 transition-colors">{reportData.vacations.approved}</span>
                                     </div>
                                 </div>
 
                                 {/* Mini Gráfico de Barras CSS */}
-                                <h4 className="text-sm font-bold text-slate-600 mb-4 uppercase tracking-widest">Días Disfrutados por Mes</h4>
-                                <div className="flex items-end justify-between gap-1 h-32 bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                                <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-4 uppercase tracking-widest transition-colors">Días Disfrutados por Mes</h4>
+                                <div className="flex items-end justify-between gap-1 h-32 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 transition-colors">
                                     {Object.entries(reportData.vacations.approved_days_by_month).map(([month, days]) => {
                                         const maxDays = Math.max(...Object.values(reportData.vacations.approved_days_by_month), 1);
                                         const height = (days / maxDays) * 100;
@@ -328,7 +352,7 @@ const Reports = () => {
                                                         {days} días
                                                     </div>
                                                 </div>
-                                                <span className="text-[9px] font-bold text-slate-400 mt-2 uppercase">{monthNames[month]}</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-2 uppercase transition-colors">{monthNames[month]}</span>
                                             </div>
                                         );
                                     })}
@@ -340,27 +364,27 @@ const Reports = () => {
 
                     {/* VISTA DE AUDITORÍA LOGS */}
                     {activeTab === 'logs' && isAdmin && (
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 transition-colors">
                                     <i className="fa-solid fa-clipboard-check text-corporate"></i> Registro de Actividades
                                 </h3>
                                 <div className="relative w-full md:w-72">
-                                    <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                                    <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600 text-sm"></i>
                                     <input 
                                         type="text" 
                                         placeholder="Buscar por usuario, acción..." 
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all outline-none"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-corporate/20 focus:border-corporate transition-all outline-none text-slate-800 dark:text-white"
                                     />
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-slate-50/80 border-b border-slate-100 text-xs uppercase tracking-wider font-extrabold text-slate-500">
-                                            <th className="p-4 pl-6 cursor-pointer hover:text-corporate transition-colors" onClick={() => handleSort('created_at')}>
+                                        <tr className="bg-slate-50/80 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-700 text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400 transition-colors">
+                                            <th className="p-4 pl-6 cursor-pointer hover:text-corporate dark:hover:text-corporate-light transition-colors" onClick={() => handleSort('created_at')}>
                                                 Fecha y Hora {sortBy === 'created_at' && <i className={`fa-solid fa-sort-${sortDir === 'asc' ? 'up' : 'down'} ml-1`}></i>}
                                             </th>
                                             <th className="p-4">Usuario Responsable</th>
@@ -371,31 +395,31 @@ const Reports = () => {
                                     <tbody className="divide-y divide-slate-100">
                                         {logs.map((log) => (
                                             <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="p-4 pl-6 text-sm text-slate-500 font-medium whitespace-nowrap">
+                                                <td className="p-4 pl-6 text-sm text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap transition-colors">
                                                     {new Date(log.created_at).toLocaleString('es-ES')}
                                                 </td>
                                                 <td className="p-4">
                                                     {log.causer ? (
                                                         <div className="flex items-center gap-2">
-                                                            <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold font-mono">
+                                                            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs font-bold font-mono transition-colors">
                                                                 {log.causer.name?.charAt(0)}{log.causer.surname?.charAt(0)}
                                                             </div>
-                                                            <span className="text-sm font-bold text-slate-700">{log.causer.name} {log.causer.surname}</span>
+                                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors">{log.causer.name} {log.causer.surname}</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-sm text-slate-400 italic">Sistema</span>
+                                                        <span className="text-sm text-slate-400 dark:text-slate-600 italic">Sistema</span>
                                                     )}
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-slate-800">
+                                                        <span className="text-sm font-bold text-slate-800 dark:text-white transition-colors">
                                                             {getLogSummary(log)}
                                                         </span>
-                                                        <span className={`text-[10px] uppercase font-black mt-1 px-1.5 py-0.5 rounded w-fit ${
-                                                            log.event === 'created' ? 'bg-emerald-100 text-emerald-700' :
-                                                            log.event === 'updated' ? 'bg-blue-100 text-blue-700' :
-                                                            log.event === 'deleted' ? 'bg-red-100 text-red-700' :
-                                                            'bg-slate-100 text-slate-500'
+                                                        <span className={`text-[10px] uppercase font-black mt-1 px-1.5 py-0.5 rounded w-fit transition-colors ${
+                                                            log.event === 'created' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                                                            log.event === 'updated' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                                                            log.event === 'deleted' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                                                            'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300'
                                                         }`}>
                                                             {log.event === 'created' ? 'Alta' :
                                                              log.event === 'updated' ? 'Edición' :
@@ -406,15 +430,15 @@ const Reports = () => {
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-sm mb-1 flex items-center gap-2">
-                                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-xs font-bold border border-slate-200">
+                                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md text-xs font-bold border border-slate-200 dark:border-slate-600 transition-colors">
                                                             {log.subject_type?.split('\\').pop() === 'User' ? 'Empleado' : 
                                                              log.subject_type?.split('\\').pop() === 'Vacation' ? 'Vacaciones' :
                                                              log.subject_type?.split('\\').pop() === 'HolidayDate' ? 'Festivo' :
                                                              log.subject_type?.split('\\').pop() || 'Registro'}
                                                         </span>
                                                         <div className="flex flex-col">
-                                                            {log.subject_name && <span className="text-xs font-bold text-slate-700">{log.subject_name}</span>}
-                                                            {log.subject_id && <span className="text-slate-400 font-mono text-[10px]">ID: {log.subject_id}</span>}
+                                                            {log.subject_name && <span className="text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors">{log.subject_name}</span>}
+                                                            {log.subject_id && <span className="text-slate-400 dark:text-slate-500 font-mono text-[10px] transition-colors">ID: {log.subject_id}</span>}
                                                         </div>
                                                     </div>
                                                     {log.properties && (log.properties.attributes || log.properties.old) && (

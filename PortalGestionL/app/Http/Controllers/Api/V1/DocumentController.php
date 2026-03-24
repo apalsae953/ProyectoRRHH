@@ -10,6 +10,7 @@ use App\Http\Resources\V1\DocumentResource;
 use App\Http\Requests\Api\V1\StoreDocumentRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Models\Notification;
 
 class DocumentController extends Controller
 {
@@ -74,6 +75,14 @@ class DocumentController extends Controller
         // Enviar notificación al empleado
         try {
             \Illuminate\Support\Facades\Mail::to($employee->email)->send(new \App\Mail\DocumentUploadedNotification($document));
+            
+            Notification::create([
+                'user_id' => $employee->id,
+                'text' => "Se ha subido un nuevo documento: " . $document->title,
+                'icon' => ($document->type === 'payroll' ? 'fa-file-invoice-dollar' : 'fa-file-signature'),
+                'color' => 'blue',
+                'link' => '/documentos'
+            ]);
         } catch (\Exception $e) {
             Log::error('Error enviando notificación de documento: ' . $e->getMessage());
         }

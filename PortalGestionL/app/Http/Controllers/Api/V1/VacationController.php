@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\VacationRequestProcessed;
 use App\Mail\VacationRequestedAdmin;
 use App\Models\User;
+use App\Models\Notification;
 
 class VacationController extends Controller
 {
@@ -132,23 +133,28 @@ class VacationController extends Controller
                 $hours = isset($matches[1]) ? (float)$matches[1] : 0;
             }
             // Estimación de días: 8h = 1 día (o lo guardamos como decimal)
-            $hoursPerDay = \App\Models\Setting::where('key', 'hours_per_working_day')->value('value') ?? 8;
-            $daysRequested = $hours / (float)$hoursPerDay;
+            $hoursPerDay = (float)(\App\Models\Setting::where('key', 'hours_per_working_day')->value('value') ?? 8);
+            $daysRequested = $hours / $hoursPerDay;
         } else {
-            // --- CÁLCULO DE DÍAS (SOLO PARA VACACIONES O ENFERMEDAD) ---
-            // Obtener festivos en el rango para no descontarlos del saldo
-            $holidays = \App\Models\HolidayDate::whereBetween('date', [$startDate, $endDate])
-                ->get()
-                ->pluck('date')
-                ->map(function($date) {
-                    return $date->format('Y-m-d');
-                })
-                ->toArray();
+            // Soporte para solicitudes por HORAS (ej. visita médico, tarde libre)
+            if ($request->filled('hours') && (float)$request->hours > 0) {
+                $hours = (float)$request->hours;
+                $hoursPerDay = (float)(\App\Models\Setting::where('key', 'hours_per_working_day')->value('value') ?? 8);
+                $daysRequested = round($hours / $hoursPerDay, 2);
+            } else {
+                // --- CÁLCULO DE DÍAS (SOLIDARIOS CON FINES DE SEMANA Y FESTIVOS) ---
+                $holidays = \App\Models\HolidayDate::whereBetween('date', [$startDate, $endDate])
+                    ->get()
+                    ->pluck('date')
+                    ->map(function($date) {
+                        return $date->format('Y-m-d');
+                    })
+                    ->toArray();
 
-            // Aquí calculamos los días laborables restando fines de semana y la tabla 'holiday_dates'
-            $daysRequested = $startDate->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
-                return $date->isWeekday() && !in_array($date->format('Y-m-d'), $holidays); 
-            }, $endDate) + 1;
+                $daysRequested = $startDate->diffInDaysFiltered(function (Carbon $date) use ($holidays) {
+                    return $date->isWeekday() && !in_array($date->format('Y-m-d'), $holidays); 
+                }, $endDate) + 1;
+            }
         }
 
         // --- Validar Saldo (SOLO PARA VACACIONES) ---
@@ -189,6 +195,28 @@ class VacationController extends Controller
         if ($vacation->status === 'pending') {
             try {
                 Mail::to('jefesupremogm@gmail.com')->send(new VacationRequestedAdmin($vacation));
+                
+                // NOTIFICACIÓN EN BD PARA ADMINS (Simulado enviando a todos los admins)
+                $typeLabel = match($vacation->type) {
+                    'overtime' => 'horas extra',
+                    'sick_leave' => 'baja médica',
+                    default => 'vacaciones',
+                };
+                
+                $admins = User::role(['admin', 'hr_director'])->get();
+                foreach($admins as $admin) {
+                   Notification::create([
+                       'user_id' => $admin->id,
+                       'text' => "Nueva solicitud de {$typeLabel} de " . $user->name,
+                       'icon' => match($vacation->type) {
+                           'overtime' => 'fa-clock',
+                           'sick_leave' => 'fa-hospital-user',
+                           default => 'fa-plane-departure',
+                       },
+                       'color' => 'blue',
+                       'link' => '/gestion-vacaciones'
+                   ]);
+                }
             } catch (\Exception $e) {
                 \Log::error('Error avisando al admin de nueva solicitud: ' . $e->getMessage());
             }
@@ -259,9 +287,40 @@ class VacationController extends Controller
                 if ($isHrOrAdmin) {
                     // Notificar al empleado que el admin le ha anulado las vacaciones
                     Mail::to($vacation->user->email)->send(new \App\Mail\VacationRequestProcessed($vacation));
+                    
+                    $typeLabel = match($vacation->type) {
+                        'overtime' => 'horas extra',
+                        'sick_leave' => 'baja médica',
+                        default => 'vacaciones',
+                    };
+                    
+                    Notification::create([
+                        'user_id' => $vacation->user_id,
+                        'text' => "Tu solicitud de {$typeLabel} ha sido ANULADA por la empresa.",
+                        'icon' => 'fa-ban',
+                        'color' => 'slate',
+                        'link' => '/vacaciones'
+                    ]);
                 } else {
                     // Notificar al admin que el empleado ha cancelado
                     Mail::to('jefesupremogm@gmail.com')->send(new \App\Mail\VacationCanceledAdmin($vacation));
+                    
+                    $typeLabel = match($vacation->type) {
+                        'overtime' => 'horas extra',
+                        'sick_leave' => 'baja médica',
+                        default => 'vacaciones',
+                    };
+
+                    $admins = User::role(['admin', 'hr_director'])->get();
+                    foreach($admins as $admin) {
+                        Notification::create([
+                            'user_id' => $admin->id,
+                            'text' => $user->name . " ha CANCELADO su solicitud de {$typeLabel}",
+                            'icon' => 'fa-circle-xmark',
+                            'color' => 'amber',
+                            'link' => '/gestion-vacaciones'
+                        ]);
+                    }
                 }
             } catch (\Exception $e) {
                 \Log::error('Error avisando de la cancelación: ' . $e->getMessage());
@@ -326,6 +385,20 @@ class VacationController extends Controller
         // Disparar evento de notificación al empleado por email 
         try {
             Mail::to($vacation->user->email)->send(new VacationRequestProcessed($vacation));
+            
+            $typeLabel = match($vacation->type) {
+                'overtime' => 'horas extra',
+                'sick_leave' => 'baja médica',
+                default => 'vacaciones',
+            };
+
+            Notification::create([
+                'user_id' => $vacation->user_id,
+                'text' => "¡Buenas noticias! Tu solicitud de {$typeLabel} ha sido APROBADA.",
+                'icon' => 'fa-circle-check',
+                'color' => 'emerald',
+                'link' => '/vacaciones'
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error enviando correo de vacaciones: ' . $e->getMessage());
         }
@@ -359,6 +432,20 @@ class VacationController extends Controller
         // Disparar evento de notificación al empleado por email 
         try {
             Mail::to($vacation->user->email)->send(new VacationRequestProcessed($vacation));
+            
+            $typeLabel = match($vacation->type) {
+                'overtime' => 'horas extra',
+                'sick_leave' => 'baja médica',
+                default => 'vacaciones',
+            };
+
+            Notification::create([
+                'user_id' => $vacation->user_id,
+                'text' => "Se ha RECHAZADO tu solicitud de {$typeLabel}. Revisa el mensaje de RRHH.",
+                'icon' => 'fa-circle-xmark',
+                'color' => 'amber',
+                'link' => '/vacaciones'
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error enviando correo de rechazo de vacaciones: ' . $e->getMessage());
         }
