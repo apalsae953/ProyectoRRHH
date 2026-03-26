@@ -44,7 +44,7 @@ const AdminLayout = () => {
         window.addEventListener('show-toast', handleToast);
         
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 10000);
+        const interval = setInterval(fetchNotifications, 30000);
         
         return () => {
             window.removeEventListener('refresh-notifications', handleRefresh);

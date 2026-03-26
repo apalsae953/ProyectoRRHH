@@ -1,8 +1,8 @@
 import axios from '../api/axios';
 
 const employeeService = {
-    getEmployees: async () => {
-        const response = await axios.get('/api/v1/employees');
+    getEmployees: async (params = {}) => {
+        const response = await axios.get('/api/v1/employees', { params });
         return response.data;
     },
     createEmployee: async (data) => {

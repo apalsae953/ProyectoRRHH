@@ -20,6 +20,7 @@ class VacationController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $perPage = $request->input('per_page', 15);
 
         // Iniciar la consulta cargando al empleado y al aprobador 
         $query = Vacation::with(['user', 'approver']);
@@ -51,7 +52,7 @@ class VacationController extends Controller
         }
 
         // Ordenamos por fecha de inicio para que las más recientes aparezcan primero
-        $vacations = $query->latest('start_date')->get();
+        $vacations = $query->latest('start_date')->paginate($perPage);
 
         return VacationResource::collection($vacations);
     }

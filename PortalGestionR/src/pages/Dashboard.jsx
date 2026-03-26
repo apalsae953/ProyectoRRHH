@@ -8,8 +8,9 @@ import { motion } from 'framer-motion';
 const Dashboard = () => {
     const { user } = useAuth();
     const [balance, setBalance] = useState(null);
-    const [allVacations, setAllVacations] = useState([]);
     const [news, setNews] = useState([]);
+    const [totalOvertimeHours, setTotalOvertimeHours] = useState(0);
+    const [whoIsOut, setWhoIsOut] = useState([]);
     const [loading, setLoading] = useState(true);
     const [greeting, setGreeting] = useState('');
 
@@ -23,16 +24,13 @@ const Dashboard = () => {
 
         const fetchDashboardData = async () => {
             try {
-                const [balanceRes, vacationsRes, newsRes] = await Promise.all([
-                    axios.get('/api/v1/vacation-balances/me'),
-                    axios.get('/api/v1/vacations'),
-                    axios.get('/api/v1/news')
-                ]);
+                const response = await axios.get('/api/v1/dashboard/summary');
+                const data = response.data;
                 
-                setBalance(balanceRes.data?.data || balanceRes.data);
-                const vListData = vacationsRes.data?.data || vacationsRes.data || [];
-                setAllVacations(vListData);
-                setNews(newsRes.data?.data || newsRes.data || []);
+                setBalance(data.balance);
+                setNews(data.news?.data || data.news || []);
+                setWhoIsOut(data.who_is_out || []);
+                setTotalOvertimeHours(data.total_overtime_hours || 0);
             } catch (error) {
                 console.error("Error cargando datos del dashboard", error);
             } finally {
@@ -50,26 +48,6 @@ const Dashboard = () => {
     const totalPotential = generated + carriedOver;
     const remainingDays = available;
     const percentage = totalPotential > 0 ? (taken / totalPotential) * 100 : 0;
-
-    const totalOvertimeHours = allVacations
-        .filter(v => v.tipo === 'overtime' && v.estado === 'approved' && v.empleado?.id === user.id)
-        .reduce((sum, v) => sum + Number(v.horas || 0), 0);
-
-    const [whoIsOut, setWhoIsOut] = useState([]);
-
-    useEffect(() => {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const outList = allVacations.filter(v => {
-            if (v.estado !== 'approved') return false;
-            const start = new Date(v.fecha_inicio);
-            const end = new Date(v.fecha_fin);
-            start.setHours(0,0,0,0);
-            end.setHours(0,0,0,0);
-            return today >= start && today <= end;
-        });
-        setWhoIsOut(outList);
-    }, [allVacations]);
 
     if (loading) return (
         <div className="h-[80vh] flex items-center justify-center">
@@ -109,14 +87,6 @@ const Dashboard = () => {
                              <button className="px-8 py-4 bg-white text-slate-900 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl">
                                 Mi Expediente 
                              </button>
-                             <div className="flex -space-x-3 overflow-hidden p-1">
-                                {[1,2,3,4].map(i => (
-                                    <div key={i} className={`inline-block h-10 w-10 rounded-full ring-4 ring-[#0F172A] bg-slate-800 border border-white/10 flex items-center justify-center text-[10px] font-black`}>
-                                        {i === 4 ? `+${whoIsOut.length}` : '👤'}
-                                    </div>
-                                ))}
-                             </div>
-                             <span className="text-xs text-slate-500 font-bold ml-2">Equipo operativo</span>
                         </div>
                     </div>
 

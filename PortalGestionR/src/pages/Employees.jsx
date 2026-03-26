@@ -53,7 +53,7 @@ const Employees = () => {
         const fetchData = async () => {
             try {
                 const response = await employeeService.getEmployees();
-                const employeeList = response?.data || response || [];
+                const employeeList = response?.data?.data || response?.data || response || [];
                 setEmployees(Array.isArray(employeeList) ? employeeList : []);
 
                 if (isHrOrAdmin) {
@@ -104,7 +104,7 @@ const Employees = () => {
             // Recargar empleados
             setLoading(true);
             const response = await employeeService.getEmployees();
-            const employeeList = response?.data || response || [];
+            const employeeList = response?.data?.data || response?.data || response || [];
             setEmployees(Array.isArray(employeeList) ? employeeList : []);
         } catch (error) {
             setFormError(error.response?.data?.message || 'Error al crear empleado');

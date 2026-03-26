@@ -21,10 +21,39 @@ class EmployeeController extends Controller
     /**
      * GET /api/v1/employees (RRHH/Admin)
      */
-    public function index()
+    public function index(Request $request)
     {
-        // En lugar de paginar, traemos todos los empleados para que el filtro de React funcione correctamente sobre la lista completa
-        $employees = User::with(['department', 'position'])->get();
+        $perPage = $request->input('per_page', 100);
+        $search = $request->input('search');
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+        
+        $query = User::with(['department', 'position', 'roles']);
+
+        // Búsqueda en el servidor
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('surname', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('dni', 'like', "%{$search}%")
+                  ->orWhereHas('position', function($pq) use ($search) {
+                      $pq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('department', function($dq) use ($search) {
+                      $dq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Ordenación en el servidor
+        if (in_array($sortBy, ['name', 'surname', 'email', 'status', 'created_at', 'hired_at'])) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->latest();
+        }
+        
+        $employees = $query->paginate($perPage);
         
         return EmployeeResource::collection($employees);
     }

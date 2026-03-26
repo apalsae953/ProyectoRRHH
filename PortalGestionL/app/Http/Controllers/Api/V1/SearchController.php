@@ -26,7 +26,7 @@ class SearchController extends Controller
         }
 
         // Search Employees
-        $employees = User::with(['position', 'department'])
+        $employees = User::with(['position', 'department', 'roles'])
             ->where('name', 'like', "%{$q}%")
             ->orWhere('surname', 'like', "%{$q}%")
             ->orWhere('dni_normalizado', 'like', "%" . strtoupper($q) . "%")

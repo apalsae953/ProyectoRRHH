@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\PositionController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\NewsController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Resources\V1\EmployeeResource;
 
 Route::group(['prefix' => 'v1'], function () {
@@ -24,6 +25,9 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     });
+
+    // Nueva ruta para el dashboard unificado
+    Route::middleware('auth:sanctum')->get('/dashboard/summary', [DashboardController::class, 'summary']);
 
     // Ruta de descarga de documentos (con URL temporal firmada para visualización directa)
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])
